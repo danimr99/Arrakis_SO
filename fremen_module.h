@@ -2,8 +2,10 @@
 
 // Data structure for the Fremen file configuration
 typedef struct {
-    int seconds_to_clean;
+    int clean_time;
     char *ip;
     int port;
     char *directory;
 } FremenConfiguration;
+
+FremenConfiguration getFremenConfiguration(int config_file_fd);
