@@ -11,11 +11,9 @@ void RsiHandler(void) {
     raise(SIGINT);
 }
 
-
 int main(int argc, char ** argv) {
     FremenConfiguration fremen_configuration;
     int config_file_fd;
-    char buffer[MAX_LENGTH];
 
     // Check if fremen configuration file has been specified
     if(argc < 2) {
@@ -35,13 +33,9 @@ int main(int argc, char ** argv) {
         // Get data from Fremen configuration file
         fremen_configuration = getFremenConfiguration(config_file_fd);
 
-        sprintf(buffer, "Time: %d\nIP: %s\nPort: %d\nDirectory: %s\n", 
-        fremen_configuration.clean_time, fremen_configuration.ip, fremen_configuration.port, fremen_configuration.directory);
-
-        printMessage(buffer);
-
-        // TODO: Logic of the program goes here
-
+        // Simulate bash shell
+        simulateBashShell();
+        
     } else {
         printMessage("ERROR: No s'ha trobat el fitxer de configuració de Fremen.\n");
     }
