@@ -3,9 +3,9 @@
 // Data structure for the Fremen file configuration
 typedef struct {
     int clean_time;
-    char *ip;
+    char * ip;
     int port;
-    char *directory;
+    char * directory;
 } FremenConfiguration;
 
 #define LOGIN_REQUIRED_PARAMETERS 2

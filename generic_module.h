@@ -4,6 +4,8 @@
 #include <unistd.h>
 #include <signal.h>
 #include <fcntl.h>
+#include <ctype.h>
+#include <sys/wait.h>
 
 
 #define MAX_LENGTH 200

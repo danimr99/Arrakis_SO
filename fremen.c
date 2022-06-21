@@ -1,8 +1,15 @@
 #include "fremen_module.h"
 
+// Global variables
+FremenConfiguration fremen_configuration;
+
 // Function to handle signals
 void RsiHandler(void) {
     printMessage("\nAturant Fremen...\n");
+
+    // Free up memory
+    free(fremen_configuration.ip);
+    free(fremen_configuration.directory);
     
     // Reprogram Ctrl + C signal (SIGINT) to default behaviour
     signal(SIGINT, SIG_DFL);
@@ -12,7 +19,6 @@ void RsiHandler(void) {
 }
 
 int main(int argc, char ** argv) {
-    FremenConfiguration fremen_configuration;
     int config_file_fd;
 
     // Check if fremen configuration file has been specified
