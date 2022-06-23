@@ -50,7 +50,7 @@ void runLinuxCommand(char **command) {
 }
 
 void simulateBashShell() {
-  char * buffer = NULL, ** command = NULL;
+  char * buffer = NULL, * temp = NULL, ** command = NULL;
   int args_counter = 0, stop = FALSE;
 
   printMessage("Benvingut a Fremen");
@@ -61,13 +61,14 @@ void simulateBashShell() {
     // Get command introduced by the user
     buffer = readLineUntilDelimiter(STDIN_FILENO, '\n');
 
-    // Check if command is not null or an enter
-    if(!isEmpty(buffer) && buffer[0] != '\n') {
-      // Convert command to lower case
-      buffer = toLowerCase(buffer);
+    // Format command to lower case
+    temp = toLowerCase(buffer);
+    free(buffer);
 
+    // Check if command is not an empty string
+    if(!isEmpty(temp)) {
       // Split command by spaces and get the number of arguments
-      command = split(buffer, " ");
+      command = split(temp, " ");
       args_counter = countSplits(command) - 1;
 
       // Check if command matches with a custom or Linux command
@@ -121,6 +122,6 @@ void simulateBashShell() {
     }
 
     // Free buffer
-    free(buffer);
+    free(temp);
   } while (!stop);
 }

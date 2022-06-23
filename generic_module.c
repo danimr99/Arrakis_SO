@@ -26,7 +26,7 @@ char * toLowerCase(char * text) {
   for(int i = 0; i < strlen(text); i++) {
     lower[i] = tolower(text[i]);
   }
-
+  
   return lower;
 }
 
