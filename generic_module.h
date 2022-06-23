@@ -7,7 +7,6 @@
 #include <ctype.h>
 #include <sys/wait.h>
 
-
 #define MAX_LENGTH 200
 #define TRUE 1
 #define FALSE 0
@@ -15,12 +14,12 @@
 // Define for printing on terminal
 #define printMessage(x) write(1, x, strlen(x))
 
-char * readLineUntilDelimiter(int fd, char delimiter);
+char *readLineUntilDelimiter(int fd, char delimiter);
 
-char * toLowerCase(char * text);
+char *toLowerCase(char *text);
 
-int isEmpty(char * text);
+int isEmpty(char *text);
 
-char ** split(char * text, char * delimiter);
+char **split(char *text, char *delimiter);
 
-int countSplits(char ** array);
+int countSplits(char **array);
