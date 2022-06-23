@@ -41,7 +41,6 @@ int main(int argc, char ** argv) {
 
         // Simulate bash shell
         simulateBashShell();
-        
     } else {
         printMessage("ERROR: No s'ha trobat el fitxer de configuració de Fremen.\n");
     }

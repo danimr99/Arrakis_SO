@@ -30,6 +30,18 @@ char * toLowerCase(char * text) {
   return lower;
 }
 
+int isEmpty(char * text) {
+  while(*text != '\0' && *text != '\n') {
+    if(!isspace(*text)) {
+      return FALSE;
+    }
+
+    text++;
+  }
+
+  return TRUE;
+}
+
 char ** split(char * text, char * delimiter) {
   char ** split = NULL;
   int index = 0, split_counter = 0;
