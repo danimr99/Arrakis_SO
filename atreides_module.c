@@ -76,22 +76,23 @@ void *runClientThread(void *args) {
 
     // Check the frame type of the frame received
     switch (frame.type) {
-    case LOGIN_TYPE:
-      // TODO : Login logic
-      break;
-    
-    // TODO : All remaining cases (S, F, P)
+      case LOGIN_TYPE:
+        // TODO : Login logic
+        printMessage("Type received: LOGIN");
+        break;
+      
+      // TODO : All remaining cases (S, F, P)
 
-    case LOGOUT_TYPE:
-      // TODO : Logout logic
-      // Stop client thread loop
-      is_exit = TRUE;
+      case LOGOUT_TYPE:
+        // TODO : Logout logic
+        // Stop client thread loop
+        is_exit = TRUE;
 
-      break;
+        break;
 
-    default:
-      printMessage("ERROR: S'ha rebut un frame de tipus desconegut\n");
-      break;
+      default:
+        printMessage("ERROR: S'ha rebut un frame de tipus desconegut\n");
+        break;
     }
   }
 

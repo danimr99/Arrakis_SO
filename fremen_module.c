@@ -134,7 +134,11 @@ int simulateBashShell(FremenConfiguration fremen_configuration) {
             if (socket_fd > 0) {
               // Generate login frame
               frame = initializeFrame(ORIGIN_FREMEN);
-              frame = generateLoginFrame(frame, 'C', command[1], command[2]);
+              frame = generateLoginFrame(frame, LOGIN_TYPE, command[1], command[2]);
+
+              for(int i = 0; i < FRAME_LENGTH; i++) {
+                printf("Index %d: %c\n", i, frame[i]);
+              }
 
               // Send login frame to Atreides
               sendFrame(ORIGIN_FREMEN, socket_fd, frame);

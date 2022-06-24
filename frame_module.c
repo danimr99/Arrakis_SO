@@ -1,7 +1,7 @@
 #include "frame_module.h"
 
-char *fill(char * array, int size) {
-  for (int i = strlen(array); i < size; i++) {
+char *fill(char * array, int index, int size) {
+  for (int i = index; i < size; i++) {
     array[i] = '\0';
   }
 
@@ -28,14 +28,14 @@ char *initializeFrame(int origin) {
   }
 
   // Fill with '\0' the rest of the origin
-  frame = fill(frame, FRAME_ORIGIN_LENGTH);
+  frame = fill(frame, strlen(frame), FRAME_ORIGIN_LENGTH);
 
   return frame;
 }
 
 char *generateLoginFrame(char *frame, char type, char *name, char *zip_code) {
   char * buffer = NULL;
-  int frame_length;
+  int i, frame_length;
 
   // Add frame type
   frame[FRAME_ORIGIN_LENGTH] = type;
@@ -47,12 +47,12 @@ char *generateLoginFrame(char *frame, char type, char *name, char *zip_code) {
   frame_length = FRAME_ORIGIN_LENGTH + FRAME_TYPE_LENGTH;
 
   // Add buffer to frame
-  for (int i = frame_length; buffer[i - frame_length] != '\0'; i++) {
+  for (i = frame_length; buffer[i - frame_length] != '\0'; i++) {
     frame[i] = buffer[i - frame_length];
   }
 
   // Fill with '\0' the rest of the data
-  frame = fill(frame, FRAME_LENGTH);
+  frame = fill(frame, i, FRAME_DATA_LENGTH);
 
   // Free buffer
   free(buffer);
