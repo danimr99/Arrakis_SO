@@ -1,4 +1,5 @@
 #include "generic_module.h"
+#include "frame_module.h"
 
 #include <arpa/inet.h>
 #include <sys/socket.h>
@@ -20,6 +21,6 @@ typedef struct {
 
 FremenConfiguration getFremenConfiguration(int config_file_fd);
 
-void simulateBashShell(FremenConfiguration fremen_configuration);
+int simulateBashShell(FremenConfiguration fremen_configuration);
 
 void runLinuxCommand(char **command);

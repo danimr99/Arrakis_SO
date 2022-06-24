@@ -2,6 +2,7 @@
 
 // Global variables
 FremenConfiguration fremen_configuration;
+int socket_fd;
 
 // Function to handle signals
 void RsiHandler(void) {
@@ -10,6 +11,11 @@ void RsiHandler(void) {
   // Free up memory
   free(fremen_configuration.ip);
   free(fremen_configuration.directory);
+
+  // Close socket
+  if (socket_fd > 0) {
+    close(socket_fd);
+  }
 
   // Reprogram Ctrl + C signal (SIGINT) to default behaviour
   signal(SIGINT, SIG_DFL);
@@ -23,7 +29,7 @@ int main(int argc, char **argv) {
 
   // Check if fremen configuration file has been specified
   if (argc < 2) {
-    printMessage("ERROR: Falta especificar el fitxer de configuració de Fremen.\n");
+    printMessage("ERROR: Falta especificar el fitxer de configuració de Fremen\n");
 
     return 0;
   }
@@ -31,7 +37,7 @@ int main(int argc, char **argv) {
   // Handle Ctrl + C signal (SIGINT)
   signal(SIGINT, (void *)RsiHandler);
 
-  /* Get file descriptor of Fremen configuration file */
+  // Get file descriptor of Fremen configuration file
   config_file_fd = open(argv[1], O_RDWR | O_APPEND | O_CREAT, 0666);
 
   // Check if Fremen configuration file exists
@@ -40,9 +46,9 @@ int main(int argc, char **argv) {
     fremen_configuration = getFremenConfiguration(config_file_fd);
 
     // Simulate bash shell
-    simulateBashShell(fremen_configuration);
+    socket_fd = simulateBashShell(fremen_configuration);
   } else {
-    printMessage("ERROR: No s'ha trobat el fitxer de configuració de Fremen.\n");
+    printMessage("ERROR: No s'ha trobat el fitxer de configuració de Fremen\n");
   }
 
   // Self shutdown program using Ctrl + C signal (SIGINT)

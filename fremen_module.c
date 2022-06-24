@@ -23,7 +23,18 @@ FremenConfiguration getFremenConfiguration(int config_file_fd) {
   // Get directory from Fremen configuration file
   fremen_configuration.directory = readLineUntilDelimiter(config_file_fd, '\n');
 
+  // Close configuration file descriptor
+  close(config_file_fd);
+
   return fremen_configuration;
+}
+
+char **convertCommandToLowerCase(char **command) {
+  for(int i = 0; i < 1; i++) {
+    command[i] = toLowerCase(command[i]);
+  }
+
+  return command;
 }
 
 void runLinuxCommand(char **command) {
@@ -49,7 +60,7 @@ void runLinuxCommand(char **command) {
   }
 }
 
-int login(FremenConfiguration fremen_configuration) {
+int configureSocket(FremenConfiguration fremen_configuration) {
   struct sockaddr_in server;
   int socket_fd;
 
@@ -58,7 +69,7 @@ int login(FremenConfiguration fremen_configuration) {
 
   // Check if socket has been successfully created
   if ((socket_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
-    printMessage("ERROR: No s'ha pogut crear socket de connexió.\n");
+    printMessage("ERROR: No s'ha pogut crear socket de connexió\n");
 
     // Mark socket as invalid
     socket_fd = -1;
@@ -71,12 +82,12 @@ int login(FremenConfiguration fremen_configuration) {
 
   // Configure Atreides server IP
   if (inet_pton(AF_INET, fremen_configuration.ip, &server.sin_addr) < 0) {
-    printMessage("ERROR: No s'ha pogut configurar la IP del servidor.\n");
+    printMessage("ERROR: No s'ha pogut configurar la IP del servidor\n");
   }
 
   // Connect socket to Atreides server
   if (connect(socket_fd, (void *) &server, sizeof(server)) < 0) {
-    printMessage("ERROR: No s'ha pogut connectar a Atreides.\n");
+    printMessage("ERROR: No s'ha pogut connectar a Atreides\n");
 
     // Mark socket as invalid
     socket_fd = -1;
@@ -85,9 +96,10 @@ int login(FremenConfiguration fremen_configuration) {
   return socket_fd;
 }
 
-void simulateBashShell(FremenConfiguration fremen_configuration) {
-  char *buffer = NULL, *temp = NULL, **command = NULL;
+int simulateBashShell(FremenConfiguration fremen_configuration) {
+  char *buffer = NULL, **command = NULL, *frame = NULL;
   int args_counter = 0, socket_fd = 0;
+  Frame received_frame;
 
   printMessage("Benvingut a Fremen");
 
@@ -97,15 +109,14 @@ void simulateBashShell(FremenConfiguration fremen_configuration) {
     // Get command introduced by the user
     buffer = readLineUntilDelimiter(STDIN_FILENO, '\n');
 
-    // Format command to lower case
-    temp = toLowerCase(buffer);
-    free(buffer);
-
     // Check if command is not an empty string
-    if (!isEmpty(temp)) {
+    if (!isEmpty(buffer)) {
       // Split command by spaces and get the number of arguments
-      command = split(temp, " ");
+      command = split(buffer, " ");
       args_counter = countSplits(command) - 1;
+
+      // Format command to lower case
+      command = convertCommandToLowerCase(command);
 
       // Check if command matches with a custom or Linux command
       if (strcmp(command[0], custom_commands[0]) == 0) {
@@ -114,15 +125,38 @@ void simulateBashShell(FremenConfiguration fremen_configuration) {
         } else if (args_counter < LOGIN_REQUIRED_PARAMETERS) {
           printMessage("ERROR: Falten paràmetres per a la comanda LOGIN\n");
         } else {
-          printMessage("LOGIN\n");
-
           // Connect to Atreides (only available once)
           if (socket_fd == 0) {
-            socket_fd = login(fremen_configuration);
+            // Configure socket connection to Atreides
+            socket_fd = configureSocket(fremen_configuration);
+
+            // Check if Atreides server is running
+            if (socket_fd > 0) {
+              // Generate login frame
+              frame = initializeFrame(ORIGIN_FREMEN);
+              frame = generateLoginFrame(frame, 'C', command[1], command[2]);
+
+              // Send login frame to Atreides
+              sendFrame(ORIGIN_FREMEN, socket_fd, frame);
+
+              // Receive response from Atreides
+              received_frame = receiveFrame(socket_fd);
+
+              // Check type response received
+              if (received_frame.type == LOGIN_SUCCESSFUL_TYPE) {
+                // TODO : On login logic 
+              } else if (received_frame.type == LOGIN_ERROR_TYPE) {
+                printMessage("ERROR: No s'ha pogut fer login\n");
+              } else {
+                printMessage("ERROR: Ha ocurregut un error desconegut\n");
+              }
+            } else {
+              printMessage("ERROR: Atreides no està funcionant\n");
+            }
           } else if (socket_fd < 0) {
-            printMessage("ERROR: No es pot connectar a Atreides.\n");
+            printMessage("ERROR: Atreides no està funcionant\n");
           } else {
-            printMessage("ERROR: Ja estàs connectat a Atreides.\n");
+            printMessage("ERROR: Ja estàs connectat a Atreides\n");
           }
         }
       } else if (strcmp(command[0], custom_commands[1]) == 0) {
@@ -159,6 +193,10 @@ void simulateBashShell(FremenConfiguration fremen_configuration) {
           if (socket_fd > 0) {
             close(socket_fd);
             socket_fd = 0;
+
+            printMessage("T'has desconnectat d'Atreides\n");
+          } else {
+            printMessage("ERROR: No estàs connectat a Atreides\n");
           }
         }
       } else {
@@ -166,11 +204,11 @@ void simulateBashShell(FremenConfiguration fremen_configuration) {
         runLinuxCommand(command);
       }
 
-      // Free command array
+      // Free buffer and command
+      free(buffer);
       free(command);
     }
-
-    // Free buffer
-    free(temp);
   }
+
+  return socket_fd;
 }
