@@ -266,9 +266,22 @@ void *runClientThread(void *args) {
       // TODO : All remaining cases (S, F, P)
 
       case LOGOUT_TYPE:
-        // TODO : Logout logic
         // Stop client thread loop
         is_exit = TRUE;
+
+        // Receive user data from the request frame
+        user.username = readFromFrameUntilDelimiter(frame.data, 0, '*');
+        user.id = atoi(readFromFrameUntilDelimiter(frame.data, strlen(user.username) + 1, '\0'));
+        
+        sprintf(buffer, "Rebut logout de %s %d\nDesconnectat d'Atreides\n", user.username, user.id);
+        printMessage(buffer);
+
+        // Free up memory of the user and the frame sent
+        free(user.username);
+
+        // Detach thread and cancel it 
+        pthread_detach(user.process);
+        pthread_cancel(user.process);
 
         break;
 

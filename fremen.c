@@ -2,19 +2,32 @@
 
 // Global variables
 FremenConfiguration fremen_configuration;
-int socket_fd;
+extern char *username;
+extern int user_id, socket_fd;
 
 // Function to handle signals
 void RsiHandler(void) {
+  char *frame = NULL;
+
   printMessage("\nAturant Fremen...\n");
 
   // Free up memory
   free(fremen_configuration.ip);
   free(fremen_configuration.directory);
 
-  // Close socket
+  // Close socket connection if exists
   if (socket_fd > 0) {
+    // Generate logout frame
+    frame = initializeFrame(ORIGIN_FREMEN);
+    frame = generateRequestLogoutFrame(frame, LOGOUT_TYPE, username, user_id);
+
+    // Send logout frame
+    sendFrame(ORIGIN_FREMEN, socket_fd, frame);
+    free(frame);
+
+    // Close socket connection
     close(socket_fd);
+    socket_fd = 0;
   }
 
   // Reprogram Ctrl + C signal (SIGINT) to default behaviour
@@ -46,7 +59,7 @@ int main(int argc, char **argv) {
     fremen_configuration = getFremenConfiguration(config_file_fd);
 
     // Simulate bash shell
-    socket_fd = simulateBashShell(fremen_configuration);
+    simulateBashShell(fremen_configuration);
   } else {
     printMessage("ERROR: No s'ha trobat el fitxer de configuració de Fremen\n");
   }

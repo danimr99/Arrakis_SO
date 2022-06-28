@@ -11,11 +11,29 @@ UsersList user_list;
 void RsiHandler(void) {
   printMessage("\nAturant Atreides...\n");
 
+  // Terminate each client process and close each client socket connection
+  for (int i = 0; i < user_list.users_quantity; i++) {
+    free(user_list.users[i].username);
+    free(user_list.users[i].zip_code);
+
+    // Check if user has a client socket connected
+    if (user_list.users[i].client_fd > 0) {
+      // Close client socket
+      close(user_list.users[i].client_fd);
+
+      // Terminate client process
+      pthread_cancel(user_list.users[i].process);
+      pthread_join(user_list.users[i].process, NULL);
+      pthread_detach(user_list.users[i].process);
+    }
+  }
+
   // Free up memory
   free(atreides_configuration.ip);
   free(atreides_configuration.directory);
+  free(user_list.users);
 
-  // Close socket
+  // Close server socket connection
   if (socket_fd > 0) {
     close(socket_fd);
   }

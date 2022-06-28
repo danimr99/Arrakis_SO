@@ -21,6 +21,6 @@ typedef struct {
 
 FremenConfiguration getFremenConfiguration(int config_file_fd);
 
-int simulateBashShell(FremenConfiguration fremen_configuration);
+void simulateBashShell(FremenConfiguration fremen_configuration);
 
 void runLinuxCommand(char **command);

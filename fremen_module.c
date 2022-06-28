@@ -3,6 +3,10 @@
 // List of custom commands
 const char *custom_commands[] = {"login", "search", "send", "photo", "logout"};
 
+// Global variables
+char *username = NULL;
+int user_id, socket_fd = 0;
+
 FremenConfiguration getFremenConfiguration(int config_file_fd) {
   FremenConfiguration fremen_configuration;
   char *buffer = NULL;
@@ -96,9 +100,9 @@ int configureSocket(FremenConfiguration fremen_configuration) {
   return socket_fd;
 }
 
-int simulateBashShell(FremenConfiguration fremen_configuration) {
-  char *buffer = NULL, **command = NULL, *frame = NULL, *username = NULL, text[MAX_LENGTH];
-  int args_counter = 0, socket_fd = 0, user_id;
+void simulateBashShell(FremenConfiguration fremen_configuration) {
+  char *buffer = NULL, **command = NULL, *frame = NULL, text[MAX_LENGTH];
+  int args_counter = 0;
   Frame received_frame;
 
   printMessage("Benvingut a Fremen");
@@ -203,8 +207,16 @@ int simulateBashShell(FremenConfiguration fremen_configuration) {
         } else if (args_counter < LOGOUT_REQUIRED_PARAMETERS) {
           printMessage("ERROR: Falten paràmetres per a la comanda LOGOUT\n");
         } else {
-          // Close socket connection
+          // Close socket connection if exists
           if (socket_fd > 0) {
+            // Generate logout frame
+            frame = initializeFrame(ORIGIN_FREMEN);
+            frame = generateRequestLogoutFrame(frame, LOGOUT_TYPE, username, user_id);
+
+            // Send logout frame
+            sendFrame(ORIGIN_FREMEN, socket_fd, frame);
+
+            // Close socket connection
             close(socket_fd);
             socket_fd = 0;
 
@@ -223,6 +235,4 @@ int simulateBashShell(FremenConfiguration fremen_configuration) {
       free(command);
     }
   }
-
-  return socket_fd;
 }

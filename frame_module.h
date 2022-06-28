@@ -22,6 +22,7 @@ typedef struct {
 #define LOGIN_TYPE 'C'
 #define LOGIN_SUCCESSFUL_TYPE 'O' 
 #define LOGIN_ERROR_TYPE 'E' 
+
 #define LOGOUT_TYPE 'Q' 
 
 char *initializeFrame(int origin);
@@ -29,6 +30,8 @@ char *initializeFrame(int origin);
 char *generateRequestLoginFrame(char *frame, char type, char *name, char *zip_code);
 
 char *generateResponseLoginFrame(char *frame, char type, int id);
+
+char *generateRequestLogoutFrame(char *frame, char type, char *username, int user_id);
 
 void sendFrame(int origin, int fd, char *frame);
 

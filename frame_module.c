@@ -108,6 +108,33 @@ char *generateResponseLoginFrame(char *frame, char type, int id) {
   return frame;
 }
 
+char *generateRequestLogoutFrame(char *frame, char type, char *username, int user_id) {
+  char *buffer = NULL;
+  int i, frame_length;
+
+  // Add frame type
+  frame[FRAME_ORIGIN_LENGTH] = type;
+
+  // Concatenate data (username and user ID)
+  asprintf(&buffer, "%s*%d", username, user_id);
+
+  // Get the length of the frame
+  frame_length = FRAME_ORIGIN_LENGTH + FRAME_TYPE_LENGTH;
+
+  // Add buffer to frame
+  for (i = frame_length; buffer[i - frame_length] != '\0'; i++) {
+    frame[i] = buffer[i - frame_length];
+  }
+
+  // Fill with '\0' the rest of the data
+  frame = fill(frame, i, FRAME_DATA_LENGTH);
+
+  // Free buffer
+  free(buffer);
+
+  return frame;
+}
+
 void sendFrame(int origin, int fd, char *frame) {
   write(fd, frame, FRAME_LENGTH);
 
