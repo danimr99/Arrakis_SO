@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
   signal(SIGINT, (void *)RsiHandler);
 
   // Get file descriptor of Fremen configuration file
-  config_file_fd = open(argv[1], O_RDWR | O_APPEND | O_CREAT, 0666);
+  config_file_fd = open(argv[1], O_RDONLY);
 
   // Check if Fremen configuration file exists
   if (config_file_fd > 0) {

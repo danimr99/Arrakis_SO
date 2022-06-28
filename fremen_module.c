@@ -62,17 +62,14 @@ void runLinuxCommand(char **command) {
 
 int configureSocket(FremenConfiguration fremen_configuration) {
   struct sockaddr_in server;
-  int socket_fd;
+  int socket_fd;  
 
-  // Open socket to connect to Atreides
-  
-
-  // Check if socket has been successfully created
+  // Open socket and check if it has been successfully created
   if ((socket_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
     printMessage("ERROR: No s'ha pogut crear socket de connexió\n");
 
     // Mark socket as invalid
-    socket_fd = -1;
+    return -1;
   }
 
   // Set up socket
@@ -83,6 +80,9 @@ int configureSocket(FremenConfiguration fremen_configuration) {
   // Configure Atreides server IP
   if (inet_pton(AF_INET, fremen_configuration.ip, &server.sin_addr) < 0) {
     printMessage("ERROR: No s'ha pogut configurar la IP del servidor\n");
+
+    // Mark socket as invalid
+    return -1;
   }
 
   // Connect socket to Atreides server
@@ -90,15 +90,15 @@ int configureSocket(FremenConfiguration fremen_configuration) {
     printMessage("ERROR: No s'ha pogut connectar a Atreides\n");
 
     // Mark socket as invalid
-    socket_fd = -1;
+    return -1;
   }
 
   return socket_fd;
 }
 
 int simulateBashShell(FremenConfiguration fremen_configuration) {
-  char *buffer = NULL, **command = NULL, *frame = NULL;
-  int args_counter = 0, socket_fd = 0;
+  char *buffer = NULL, **command = NULL, *frame = NULL, *username = NULL, text[MAX_LENGTH];
+  int args_counter = 0, socket_fd = 0, user_id;
   Frame received_frame;
 
   printMessage("Benvingut a Fremen");
@@ -134,11 +134,7 @@ int simulateBashShell(FremenConfiguration fremen_configuration) {
             if (socket_fd > 0) {
               // Generate login frame
               frame = initializeFrame(ORIGIN_FREMEN);
-              frame = generateLoginFrame(frame, LOGIN_TYPE, command[1], command[2]);
-
-              for(int i = 0; i < FRAME_LENGTH; i++) {
-                printf("Index %d: %c\n", i, frame[i]);
-              }
+              frame = generateRequestLoginFrame(frame, LOGIN_TYPE, command[1], command[2]);
 
               // Send login frame to Atreides
               sendFrame(ORIGIN_FREMEN, socket_fd, frame);
@@ -148,7 +144,15 @@ int simulateBashShell(FremenConfiguration fremen_configuration) {
 
               // Check type response received
               if (received_frame.type == LOGIN_SUCCESSFUL_TYPE) {
-                // TODO : On login logic 
+                // Get username
+                username = (char *) malloc((sizeof(char) * strlen(command[1])) + 1);
+                strcpy(username, command[1]);
+
+                // Get user ID from the response
+                user_id = atoi(received_frame.data);
+                
+                sprintf(text, "Benvingut %s. Tens ID %d.\nAra estàs connectat a atreides\n", username, user_id);
+                printMessage(text);
               } else if (received_frame.type == LOGIN_ERROR_TYPE) {
                 printMessage("ERROR: No s'ha pogut fer login\n");
               } else {
@@ -156,9 +160,15 @@ int simulateBashShell(FremenConfiguration fremen_configuration) {
               }
             } else {
               printMessage("ERROR: Atreides no està funcionant\n");
+
+              // Set socket to default value to allow retry connection
+              socket_fd = 0;
             }
           } else if (socket_fd < 0) {
             printMessage("ERROR: Atreides no està funcionant\n");
+
+            // Set socket to default value to allow retry connection
+            socket_fd = 0;
           } else {
             printMessage("ERROR: Ja estàs connectat a Atreides\n");
           }

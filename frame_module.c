@@ -8,6 +8,27 @@ char *fill(char * array, int index, int size) {
   return array;
 }
 
+char *readFromFrameUntilDelimiter(char *array, int index, char delimiter) {
+  char *text = NULL;
+  int i = 0;
+
+  // Reserve memory dynamically for the first character
+  text = (char *)malloc(sizeof(char));
+
+  // Get all the text until the specified delimiter
+  while(array[index] != delimiter) {    
+    text[i] = array[index];
+    text = (char *)realloc(text, i + 2);
+    index++;
+    i++;
+  }
+
+  // Concatenate '\0' at the end of the string
+  text[i] = '\0';
+
+  return text;
+}
+
 char *initializeFrame(int origin) {
   char *frame;
 
@@ -33,8 +54,8 @@ char *initializeFrame(int origin) {
   return frame;
 }
 
-char *generateLoginFrame(char *frame, char type, char *name, char *zip_code) {
-  char * buffer = NULL;
+char *generateRequestLoginFrame(char *frame, char type, char *name, char *zip_code) {
+  char *buffer = NULL;
   int i, frame_length;
 
   // Add frame type
@@ -42,6 +63,33 @@ char *generateLoginFrame(char *frame, char type, char *name, char *zip_code) {
 
   // Concatenate data (name and zip code)
   asprintf(&buffer, "%s*%s", name, zip_code);
+
+  // Get the length of the frame
+  frame_length = FRAME_ORIGIN_LENGTH + FRAME_TYPE_LENGTH;
+
+  // Add buffer to frame
+  for (i = frame_length; buffer[i - frame_length] != '\0'; i++) {
+    frame[i] = buffer[i - frame_length];
+  }
+
+  // Fill with '\0' the rest of the data
+  frame = fill(frame, i, FRAME_DATA_LENGTH);
+
+  // Free buffer
+  free(buffer);
+
+  return frame;
+}
+
+char *generateResponseLoginFrame(char *frame, char type, int id) {
+  char *buffer = NULL;
+  int i, frame_length;
+
+  // Add frame type
+  frame[FRAME_ORIGIN_LENGTH] = type;
+
+  // Concatenate data (user id)
+  asprintf(&buffer, "%d", id);
 
   // Get the length of the frame
   frame_length = FRAME_ORIGIN_LENGTH + FRAME_TYPE_LENGTH;

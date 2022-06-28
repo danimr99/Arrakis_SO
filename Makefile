@@ -18,7 +18,7 @@ fremen: fremen.o generic_module.o frame_module.o fremen_module.o
 fremen_test:
 	make
 	clear
-	./fremen fremen_config.txt
+	./fremen fremen_config.dat
 
 atreides_module.o: atreides_module.c atreides_module.h
 	gcc -c atreides_module.c

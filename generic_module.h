@@ -7,7 +7,7 @@
 #include <ctype.h>
 #include <sys/wait.h>
 
-#define MAX_LENGTH 200
+#define MAX_LENGTH 300
 #define TRUE 1
 #define FALSE 0
 

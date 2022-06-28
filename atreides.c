@@ -4,6 +4,7 @@
 AtreidesConfiguration atreides_configuration;
 int socket_fd;
 pthread_mutex_t mutex;
+UsersList user_list;
 
 
 // Function to handle signals
@@ -45,12 +46,15 @@ int main(int argc, char **argv) {
   signal(SIGINT, (void *)RsiHandler);
 
   // Get file descriptor of Atreides configuration file
-  config_file_fd = open(argv[1], O_RDWR | O_APPEND | O_CREAT, 0666);
+  config_file_fd = open(argv[1], O_RDONLY);
 
   // Check if Atreides configuration file exists
   if (config_file_fd > 0) {
     // Get data from Atreides configuration file
     atreides_configuration = getAtreidesConfiguration(config_file_fd);
+
+    // Get users list
+    user_list = getUsers();
 
     // Start server
     socket_fd = startServer(atreides_configuration.ip, atreides_configuration.port);

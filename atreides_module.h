@@ -17,9 +17,26 @@ typedef struct {
   pthread_mutex_t *mutex;
 } ClientThreadArgs;
 
+typedef struct {
+  int id;
+  char *username;
+  char *zip_code;
+  int client_fd;
+  pthread_t process;
+} User;
+
+typedef struct {
+  int users_quantity;
+  User *users;
+} UsersList;
+
+
+#define USERS_REGISTER_PATH "users_list.txt"
 #define MAX_CLIENT_REQUESTS 10
 
 AtreidesConfiguration getAtreidesConfiguration(int config_file_fd);
+
+UsersList getUsers();
 
 int startServer(char *ip, int port);
 
