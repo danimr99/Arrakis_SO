@@ -13,6 +13,17 @@ typedef struct {
   char *directory;
 } FremenConfiguration;
 
+typedef struct {
+  int id;
+  char *username;
+  char *zip_code;
+} User;
+
+typedef struct {
+  int users_quantity;
+  User *users;
+} UsersList;
+
 #define LOGIN_REQUIRED_PARAMETERS 2
 #define SEARCH_REQUIRED_PARAMETERS 1
 #define SEND_REQUIRED_PARAMETERS 1

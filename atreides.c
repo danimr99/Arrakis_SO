@@ -6,7 +6,6 @@ int socket_fd;
 pthread_mutex_t mutex;
 UsersList user_list;
 
-
 // Function to handle signals
 void RsiHandler(void) {
   printMessage("\nAturant Atreides...\n");

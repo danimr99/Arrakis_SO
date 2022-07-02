@@ -108,6 +108,60 @@ char *generateResponseLoginFrame(char *frame, char type, int id) {
   return frame;
 }
 
+char *generateRequestSearchFrame(char *frame, char type, char *username, int user_id, char *zip_code) {
+  char *buffer = NULL;
+  int i, frame_length;
+
+  // Add frame type
+  frame[FRAME_ORIGIN_LENGTH] = type;
+
+  // Concatenate data (user id)
+  asprintf(&buffer, "%s*%d*%s", username, user_id, zip_code);
+
+  // Get the length of the frame
+  frame_length = FRAME_ORIGIN_LENGTH + FRAME_TYPE_LENGTH;
+
+  // Add buffer to frame
+  for (i = frame_length; buffer[i - frame_length] != '\0'; i++) {
+    frame[i] = buffer[i - frame_length];
+  }
+
+  // Fill with '\0' the rest of the data
+  frame = fill(frame, i, FRAME_DATA_LENGTH);
+
+  // Free buffer
+  free(buffer);
+
+  return frame;
+}
+
+char *generateResponseSearchFrame(char *frame, char type, char *data) {
+  char *buffer = NULL;
+  int i, frame_length;
+
+  // Add frame type
+  frame[FRAME_ORIGIN_LENGTH] = type;
+
+  // Concatenate data
+  asprintf(&buffer, "%s", data);
+
+  // Get the length of the frame
+  frame_length = FRAME_ORIGIN_LENGTH + FRAME_TYPE_LENGTH;
+
+  // Add buffer to frame
+  for (i = frame_length; buffer[i - frame_length] != '\0'; i++) {
+    frame[i] = buffer[i - frame_length];
+  }
+
+  // Fill with '\0' the rest of the data
+  frame = fill(frame, i, FRAME_DATA_LENGTH);
+
+  // Free buffer
+  free(buffer);
+
+  return frame;
+}
+
 char *generateRequestLogoutFrame(char *frame, char type, char *username, int user_id) {
   char *buffer = NULL;
   int i, frame_length;

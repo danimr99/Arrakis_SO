@@ -23,6 +23,10 @@ typedef struct {
 #define LOGIN_SUCCESSFUL_TYPE 'O' 
 #define LOGIN_ERROR_TYPE 'E' 
 
+#define SEARCH_TYPE 'S'
+#define SEARCH_SUCCESSFUL_TYPE 'L'
+#define SEARCH_ERROR_TYPE 'K'
+
 #define LOGOUT_TYPE 'Q' 
 
 char *initializeFrame(int origin);
@@ -30,6 +34,10 @@ char *initializeFrame(int origin);
 char *generateRequestLoginFrame(char *frame, char type, char *name, char *zip_code);
 
 char *generateResponseLoginFrame(char *frame, char type, int id);
+
+char *generateRequestSearchFrame(char *frame, char type, char *username, int user_id, char *zip_code);
+
+char *generateResponseSearchFrame(char *frame, char type, char *data);
 
 char *generateRequestLogoutFrame(char *frame, char type, char *username, int user_id);
 

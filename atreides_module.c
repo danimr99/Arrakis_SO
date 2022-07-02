@@ -209,8 +209,69 @@ User getUserFromFrame(char frame_data[FRAME_DATA_LENGTH]) {
   return user;
 }
 
+void getUsersDataByZipCode(int client_fd, pthread_mutex_t *mutex, char *zip_code) {
+  char *data = NULL, text[MAX_LENGTH], *send_frame = NULL;
+  int users_counter = 0;
+
+  // Get number of users from the zip code introduced
+  for (int i = 0; i < user_list.users_quantity; i++) {
+    // Check if user is from the specified zip code
+    if (strcmp(user_list.users[i].zip_code, zip_code) == 0) {
+      users_counter++;
+    }
+  }
+
+  // Add number of users to data
+  asprintf(&data, "%d", users_counter);
+
+  // Allow only one user at the time to check and modify information
+  pthread_mutex_lock(mutex);
+
+  // Print the number of users matching the zip code specified
+  sprintf(text, "Feta la cerca\nHi ha %d persones humanes a %s\n", users_counter, zip_code);
+  printMessage(text);
+
+  // Iterate through each user on the list
+  for (int i = 0; i < user_list.users_quantity; i++) {
+    // Check if user is from the specified zip code
+    if (strcmp(user_list.users[i].zip_code, zip_code) == 0) {
+      // Print user
+      sprintf(text, "%d %s\n", user_list.users[i].id, user_list.users[i].username);
+      printMessage(text);
+
+      // Check if user can be added to the data
+      if ((strlen(data) + strlen(user_list.users[i].username) + countDigits(user_list.users[i].id)) > FRAME_DATA_LENGTH) {
+        // Send existing data
+        send_frame = initializeFrame(ORIGIN_ATREIDES);
+        send_frame = generateResponseSearchFrame(send_frame, SEARCH_SUCCESSFUL_TYPE, data);
+        sendFrame(ORIGIN_ATREIDES, client_fd, send_frame);
+        free(data);
+        free(send_frame);
+
+        // Add user to data
+        asprintf(&data, "%s*%d", user_list.users[i].username, user_list.users[i].id);
+      } else {
+        // Add user to data
+        asprintf(&data, "%s*%s*%d", data, user_list.users[i].username, user_list.users[i].id);
+      }      
+    }
+  }
+
+  // Unblock restriction
+  pthread_mutex_unlock(mutex);
+
+  // Check if there is data remaining to be sent
+  if (strlen(data) > 0) {
+    send_frame = initializeFrame(ORIGIN_ATREIDES);
+    send_frame = generateResponseSearchFrame(send_frame, SEARCH_SUCCESSFUL_TYPE, data);
+    sendFrame(ORIGIN_ATREIDES, client_fd, send_frame);
+    free(data);
+    free(send_frame);
+  }
+}
+
 void *runClientThread(void *args) {
-  char buffer[MAX_LENGTH], *send_frame;
+  char buffer[MAX_LENGTH], *send_frame, *zip_code;
   Frame frame;
   User user;
   int is_exit = FALSE;
@@ -225,7 +286,7 @@ void *runClientThread(void *args) {
         // Get user from frame
         user = getUserFromFrame(frame.data);
 
-        // Allow only one user at the time to checj and modify information
+        // Allow only one user at the time to check and modify information
         pthread_mutex_lock(((ClientThreadArgs *)args)->mutex);
 
         // Check if user exists
@@ -263,7 +324,21 @@ void *runClientThread(void *args) {
 
         break;
       
-      // TODO : All remaining cases (S, F, P)
+      case SEARCH_TYPE:
+        // Receive user data from the request frame
+        user.username = readFromFrameUntilDelimiter(frame.data, 0, '*');
+        user.id = atoi(readFromFrameUntilDelimiter(frame.data, strlen(user.username) + 1, '*'));
+        zip_code = readFromFrameUntilDelimiter(frame.data, strlen(user.username) + 2 + countDigits(user.id), '\0');
+
+        sprintf(buffer, "Rebut search %s de %s %d\n", zip_code, user.username, user.id);
+        printMessage(buffer);
+
+        // Send users matching with the zip code as a response to the Fremen client
+        getUsersDataByZipCode(((ClientThreadArgs *)args)->client_fd, ((ClientThreadArgs *)args)->mutex, zip_code);
+
+        break;
+
+      // TODO : All remaining cases (F, P)
 
       case LOGOUT_TYPE:
         // Stop client thread loop
@@ -286,7 +361,9 @@ void *runClientThread(void *args) {
         break;
 
       default:
+        // TODO: Implementation of "Erroneous frames detection" from the PDF (EOF)
         printMessage("ERROR: S'ha rebut un frame de tipus desconegut\n");
+
         break;
     }
   }

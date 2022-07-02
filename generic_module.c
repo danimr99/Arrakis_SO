@@ -72,3 +72,8 @@ int countSplits(char **array) {
 
   return counter;
 }
+
+unsigned countDigits(const unsigned number) {
+  if (number < 10) return 1;
+  return 1 + countDigits(number / 10);
+}

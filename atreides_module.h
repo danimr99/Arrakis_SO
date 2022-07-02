@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include "generic_module.h"
 #include "frame_module.h"
 
@@ -29,7 +30,6 @@ typedef struct {
   int users_quantity;
   User *users;
 } UsersList;
-
 
 #define USERS_REGISTER_PATH "users_list.txt"
 #define MAX_CLIENT_REQUESTS 10

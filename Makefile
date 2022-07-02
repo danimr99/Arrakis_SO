@@ -27,7 +27,7 @@ atreides.o: atreides.c generic_module.h frame_module.h atreides_module.h
 	gcc -c atreides.c -Wall -Wextra
 
 atreides: atreides.o generic_module.o frame_module.o atreides_module.o
-	gcc atreides.o generic_module.o frame_module.o atreides_module.o -o atreides -lpthread -Wall -Wextra -ggdb3 -g
+	gcc atreides.o generic_module.o frame_module.o atreides_module.o -o atreides  -lpthread -Wall -Wextra -ggdb3 -g
 
 atreides_test:
 	make

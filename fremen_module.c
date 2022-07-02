@@ -100,6 +100,101 @@ int configureSocket(FremenConfiguration fremen_configuration) {
   return socket_fd;
 }
 
+void showSearchResults(int socket_fd, char *zip_code) {
+  Frame frame;
+  char *buffer = NULL, text[MAX_LENGTH];
+  UsersList list;
+  int index, users_processed_counter = 0;
+
+  // Receive response 
+  frame = receiveFrame(socket_fd);
+
+  // Get the number of users found matching the zip code
+  buffer = readFromFrameUntilDelimiter(frame.data, 0, '*');
+  list.users_quantity = atoi(buffer);
+  free(buffer);
+
+  // Check if there are results found
+  if (list.users_quantity > 0) {
+    // Reserve memory dynamically for the amount of results
+    list.users = (User *)malloc(sizeof(User) * list.users_quantity);
+
+    // Set the start index for getting the information from the frame
+    index = countDigits(list.users_quantity) + 1;
+
+    // Process all the data from the received frame
+    do {
+      // Get username
+      list.users[users_processed_counter].username = readFromFrameUntilDelimiter(frame.data, index, '*');
+
+      // Move the index
+      index += strlen(list.users[users_processed_counter].username) + 1;
+
+      // Get user ID
+      buffer = readFromFrameUntilDelimiter(frame.data, index, '*');
+      list.users[users_processed_counter].id = atoi(buffer);
+      free(buffer);
+      
+      // Move the index
+      index += countDigits(list.users[users_processed_counter].id) + 1;
+
+      // Increase the number of processed users results
+      users_processed_counter++;
+    } while (frame.data[index] != '\0');
+
+    // Check if all results have been received
+    if (users_processed_counter < list.users_quantity) {
+      // Keep receiving frames with the data remaining
+      do {
+        // Receive another response 
+        frame = receiveFrame(socket_fd);
+
+        // Reset index on read another frame
+        index = 0;
+
+        // Process all the data from the received frame
+        do {
+          // Get username
+          list.users[users_processed_counter].username = readFromFrameUntilDelimiter(frame.data, index, '*');
+
+          // Move the index
+          index += strlen(list.users[users_processed_counter].username) + 1;
+
+          // Get user ID
+          buffer = readFromFrameUntilDelimiter(frame.data, index, '*');
+          list.users[users_processed_counter].id = atoi(buffer);
+          free(buffer);
+          
+          // Move the index
+          index += countDigits(list.users[users_processed_counter].id) + 1;
+
+          // Increase the number of processed users results
+          users_processed_counter++;
+        } while (frame.data[index] != '\0');
+      } while (users_processed_counter < list.users_quantity);
+    }
+
+    // Print users list
+    sprintf(text, "Hi ha %d persones humanes a %s\n", list.users_quantity, zip_code);
+    printMessage(text);
+
+    for (int i = 0; i < list.users_quantity; i++) {
+      sprintf(text, "%d %s\n", list.users[i].id, list.users[i].username);
+      printMessage(text);
+    }
+
+    // Free memory of the list
+    for (int i = 0; i < list.users_quantity; i++) {
+      free(list.users[i].username);
+    }
+
+    free(list.users);
+  } else {
+    sprintf(text, "No hi ha persones humanes a %s\n", zip_code);
+    printMessage(text);
+  }
+}
+
 void simulateBashShell(FremenConfiguration fremen_configuration) {
   char *buffer = NULL, **command = NULL, *frame = NULL, text[MAX_LENGTH];
   int args_counter = 0;
@@ -142,6 +237,7 @@ void simulateBashShell(FremenConfiguration fremen_configuration) {
 
               // Send login frame to Atreides
               sendFrame(ORIGIN_FREMEN, socket_fd, frame);
+              free(frame);
 
               // Receive response from Atreides
               received_frame = receiveFrame(socket_fd);
@@ -183,7 +279,21 @@ void simulateBashShell(FremenConfiguration fremen_configuration) {
         } else if (args_counter < SEARCH_REQUIRED_PARAMETERS) {
           printMessage("ERROR: Falten paràmetres per a la comanda SEARCH\n");
         } else {
-          printMessage("SEARCH\n");
+          // Check that user has connected to Atreides previously
+          if (socket_fd > 0) {
+            // Generate search frame
+            frame = initializeFrame(ORIGIN_FREMEN);
+            frame = generateRequestSearchFrame(frame, SEARCH_TYPE, username, user_id, command[1]);
+
+            // Send search frame to Atreides
+            sendFrame(ORIGIN_FREMEN, socket_fd, frame);
+            free(frame);
+
+            // Get response and show results
+            showSearchResults(socket_fd, command[1]);
+          } else {
+            printMessage("ERROR: No estàs connectat a Atreides encara. Prova de fer login\n");
+          }
         }
       } else if (strcmp(command[0], custom_commands[2]) == 0) {
         if (args_counter > SEND_REQUIRED_PARAMETERS) {
@@ -215,6 +325,7 @@ void simulateBashShell(FremenConfiguration fremen_configuration) {
 
             // Send logout frame
             sendFrame(ORIGIN_FREMEN, socket_fd, frame);
+            free(frame);
 
             // Close socket connection
             close(socket_fd);

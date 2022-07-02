@@ -23,3 +23,5 @@ int isEmpty(char *text);
 char **split(char *text, char *delimiter);
 
 int countSplits(char **array);
+
+unsigned countDigits(const unsigned number);

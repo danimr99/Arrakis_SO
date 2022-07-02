@@ -24,6 +24,7 @@ void RsiHandler(void) {
     // Send logout frame
     sendFrame(ORIGIN_FREMEN, socket_fd, frame);
     free(frame);
+    free(username);
 
     // Close socket connection
     close(socket_fd);
