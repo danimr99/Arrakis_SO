@@ -25,7 +25,22 @@ FremenConfiguration getFremenConfiguration(int config_file_fd) {
   free(buffer);
 
   // Get directory from Fremen configuration file
-  fremen_configuration.directory = readLineUntilDelimiter(config_file_fd, '\n');
+  buffer = readLineUntilDelimiter(config_file_fd, '\n');
+  fremen_configuration.directory = (char *)malloc(sizeof(char) * strlen(buffer));
+
+  // Iterate through the string skipping the first character ('/')
+  for (int i = 1; buffer[i] != '\0'; i++) {
+    fremen_configuration.directory[i - 1] = buffer[i];
+  }
+  
+  free(buffer);
+
+  // Create configuration directory if it does not exist
+  struct stat st = {0};
+
+  if (stat(fremen_configuration.directory, &st) == -1) {
+    mkdir(fremen_configuration.directory, 0700);
+  }
 
   // Close configuration file descriptor
   close(config_file_fd);
@@ -301,7 +316,9 @@ void simulateBashShell(FremenConfiguration fremen_configuration) {
         } else if (args_counter < SEND_REQUIRED_PARAMETERS) {
           printMessage("ERROR: Falten paràmetres per a la comanda SEND\n");
         } else {
-          printMessage("SEND\n");
+          
+
+
         }
       } else if (strcmp(command[0], custom_commands[3]) == 0) {
         if (args_counter > PHOTO_REQUIRED_PARAMETERS) {

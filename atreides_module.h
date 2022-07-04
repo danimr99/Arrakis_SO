@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <pthread.h>
+#include <sys/stat.h>
 
 // Data structure for the Atreides file configuration
 typedef struct {
