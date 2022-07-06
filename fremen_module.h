@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include "generic_module.h"
 #include "frame_module.h"
 

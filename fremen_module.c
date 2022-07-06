@@ -4,6 +4,7 @@
 const char *custom_commands[] = {"login", "search", "send", "photo", "logout"};
 
 // Global variables
+extern FremenConfiguration fremen_configuration;
 char *username = NULL;
 int user_id, socket_fd = 0;
 
@@ -36,9 +37,9 @@ FremenConfiguration getFremenConfiguration(int config_file_fd) {
   free(buffer);
 
   // Create configuration directory if it does not exist
-  struct stat st = {0};
+  struct stat stats = {0};
 
-  if (stat(fremen_configuration.directory, &st) == -1) {
+  if (stat(fremen_configuration.directory, &stats) == -1) {
     mkdir(fremen_configuration.directory, 0700);
   }
 
@@ -57,10 +58,10 @@ char **convertCommandToLowerCase(char **command) {
 }
 
 void runLinuxCommand(char **command) {
-  int child_pid;
+  pid_t pid;
 
   // Execute Linux command on a child and get its PID
-  if ((child_pid = fork()) == 0) {
+  if ((pid = fork()) == 0) {
     // Code to be executed by the child
     // Execute Linux command and get the result of the operation
     int status_code = execvp(command[0], command);
@@ -75,7 +76,7 @@ void runLinuxCommand(char **command) {
   } else {
     // Code to be executed by the parent
     // Wait until child has terminated its execution
-    waitpid(child_pid, NULL, 0);
+    waitpid(pid, NULL, 0);
   }
 }
 
@@ -210,10 +211,44 @@ void showSearchResults(int socket_fd, char *zip_code) {
   }
 }
 
+Photo getPhotoInformation(char *photo_name) {
+  char *buffer = NULL;
+  Photo photo;
+  char *photo_path;
+
+  // Set photo name
+  strcpy(photo.name, photo_name);
+
+  // Get the image path
+  asprintf(&photo_path, "%s/%s", fremen_configuration.directory, photo.name);
+
+  // Get the photo file descriptor
+  photo.photo_fd = open(photo_path, O_RDONLY);
+
+  // Check if photo exists
+  if (photo.photo_fd > 0) {
+    // Get the MD5 hash of the photo
+    buffer = getPhotoMD5Hash(photo_path);
+    strcpy(photo.hash, buffer);
+    free(buffer);
+
+    // Get the size of the photo
+    struct stat stats;
+    if (stat(photo_path, &stats) == 0) {
+      photo.size = stats.st_size;
+    }
+  } else {
+    printMessage("ERROR: No s'ha troabat la imatge o no existeix\n");
+  }
+
+  return photo;
+}
+
 void simulateBashShell(FremenConfiguration fremen_configuration) {
   char *buffer = NULL, **command = NULL, *frame = NULL, text[MAX_LENGTH];
   int args_counter = 0;
   Frame received_frame;
+  Photo photo;
 
   printMessage("Benvingut a Fremen");
 
@@ -316,9 +351,28 @@ void simulateBashShell(FremenConfiguration fremen_configuration) {
         } else if (args_counter < SEND_REQUIRED_PARAMETERS) {
           printMessage("ERROR: Falten paràmetres per a la comanda SEND\n");
         } else {
-          
+          // Check that user has connected to Atreides previously
+          if (socket_fd > 0) {
+            // Generate and send photo information frame
+            frame = initializeFrame(ORIGIN_FREMEN);
+            photo = getPhotoInformation(command[1]);
+            frame = generatePhotoInformationFrame(frame, photo);
+            sendFrame(ORIGIN_FREMEN, socket_fd, frame);
+            free(frame);
 
+            // Check if exists the photo introduced to be sent
+            if (photo.photo_fd > 0) {
+              // Send photo to Atreides using frames
+              transferPhoto(ORIGIN_FREMEN, socket_fd, photo);
 
+              // TODO: Read response
+
+              // TODO: Receive response result of the photo transfer from Atreides (success or error)
+            }
+
+          } else {
+            printMessage("ERROR: No estàs connectat a Atreides encara. Prova de fer login\n");
+          }
         }
       } else if (strcmp(command[0], custom_commands[3]) == 0) {
         if (args_counter > PHOTO_REQUIRED_PARAMETERS) {

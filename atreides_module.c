@@ -1,6 +1,7 @@
 #include "atreides_module.h"
 
 extern UsersList user_list;
+extern AtreidesConfiguration atreides_configuration;
 
 AtreidesConfiguration getAtreidesConfiguration(int config_file_fd) {
   AtreidesConfiguration atreides_configuration;
@@ -26,9 +27,9 @@ AtreidesConfiguration getAtreidesConfiguration(int config_file_fd) {
   free(buffer);
 
   // Create configuration directory if it does not exist
-  struct stat st = {0};
+  struct stat stats = {0};
 
-  if (stat(atreides_configuration.directory, &st) == -1) {
+  if (stat(atreides_configuration.directory, &stats) == -1) {
     mkdir(atreides_configuration.directory, 0700);
   }
 
@@ -171,6 +172,21 @@ int getUserID(char *username, char *zip_code) {
   return id;
 }
 
+User getUserByID(int id) {
+  User user;
+
+  // Iterate through the list of users
+  for (int i = 0; i < user_list.users_quantity; i++) {
+    // Check if user matches with the ID introduced
+    if (user_list.users[i].id == id) {
+      user = user_list.users[i];
+      break;
+    }
+  }
+
+  return user;
+}
+
 int startServer(char *ip, int port) {
   char buffer[MAX_LENGTH];
   int listen_fd;
@@ -289,6 +305,7 @@ void *runClientThread(void *args) {
   char buffer[MAX_LENGTH], *send_frame, *zip_code;
   Frame frame;
   User user;
+  Photo photo;
   int is_exit = FALSE;
 
   while (!is_exit) {
@@ -332,9 +349,7 @@ void *runClientThread(void *args) {
         send_frame = generateResponseLoginFrame(send_frame, LOGIN_SUCCESSFUL_TYPE, user.id);
         sendFrame(ORIGIN_ATREIDES, user.client_fd, send_frame);
 
-        // Free up memory of the user and the frame sent
-        free(user.username);
-        free(user.zip_code);
+        // Free up memory of the frame sent
         free(send_frame);
 
         break;
@@ -353,7 +368,24 @@ void *runClientThread(void *args) {
 
         break;
 
-      // TODO : All remaining cases (F, P)
+      case PHOTO_INFO_TYPE:
+        // Receive photo information frame
+        photo = receivePhotoInformationFrame(frame.data);
+
+        sprintf(buffer, "Rebut send %s de %s %d\n", photo.name, user.username, user.id);
+        printMessage(buffer);
+
+        // FIXME: Receive photo transfer from Fremen using frames and response with the result
+        if (strcmp(photo.hash, "\0") != 0) {
+          processPhotoFrame(user.id, ((ClientThreadArgs *)args)->client_fd, atreides_configuration.directory, photo);
+        } else {
+          sprintf(buffer, "ERROR: L'usuari %s amb ID %d ha intentat enviar una foto que no existeix\n", user.username, user.id);
+          printMessage(buffer);
+        }
+
+        break;
+
+      // TODO : All remaining cases (P)
 
       case LOGOUT_TYPE:
         // Stop client thread loop
@@ -366,8 +398,10 @@ void *runClientThread(void *args) {
         sprintf(buffer, "Rebut logout de %s %d\nDesconnectat d'Atreides\n", user.username, user.id);
         printMessage(buffer);
 
+        // FIXME: Free also on Atreides RsiHandler 
         // Free up memory of the user and the frame sent
         free(user.username);
+        free(user.zip_code);
 
         // Detach thread and cancel it 
         pthread_detach(user.process);
