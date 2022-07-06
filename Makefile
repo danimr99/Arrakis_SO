@@ -35,7 +35,7 @@ atreides_test:
 	./atreides atreides_config.txt
 
 clean:
-	rm -f *.o photo_received.txt photo_sent.txt
+	rm -f *.o
 
 clean_all:
 	rm -f *.o fremen atreides

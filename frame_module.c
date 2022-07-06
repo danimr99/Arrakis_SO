@@ -258,8 +258,8 @@ char *generatePhotoFrame(char *frame, char photo_data[FRAME_DATA_LENGTH]) {
   // Get the length of the frame
   frame_length = FRAME_ORIGIN_LENGTH + FRAME_TYPE_LENGTH;
 
-  // Add buffer to frame
-  for (i = frame_length; i < FRAME_DATA_LENGTH; i++) {
+  // Add data to frame
+  for (i = frame_length; i < FRAME_LENGTH; i++) {
     frame[i] = photo_data[i - frame_length];
   }
 
@@ -316,18 +316,9 @@ void processPhotoFrame(int user_id, int socket_fd, char *directory, Photo photo)
   // Open the file descriptor of the photo on the destination directory
   destination_fd = open(destination_path, O_CREAT | O_WRONLY | O_TRUNC, 0666);
 
-  FILE *file = fopen("photo_received.txt", "a");
-
   while (processed_frames < number_frames) {
     // Receive frame
     received_frame = receiveFrame(socket_fd);
-
-    // TODO: Remove code below 
-    // Print each data char received to a file
-    for (int x = 0; x < FRAME_DATA_LENGTH; x++) {
-      fprintf(file, "%c", received_frame.data[x]);
-    }
-    printf("Frame %d processed\n", processed_frames + 1);
 
     // Check if it is the last frame to be received
     if (processed_frames == (number_frames - 1) && remainder_data != 0) {
@@ -339,8 +330,6 @@ void processPhotoFrame(int user_id, int socket_fd, char *directory, Photo photo)
     processed_frames++;
   }
 
-  fclose(file);
-
   // Close photo destination file descriptor
   close(destination_fd);
 
@@ -348,9 +337,6 @@ void processPhotoFrame(int user_id, int socket_fd, char *directory, Photo photo)
   buffer = getPhotoMD5Hash(destination_path);
   strcpy(transferred_photo_hash, buffer);
   free(buffer);
-
-  printf("Original: %s\n", photo.hash);
-  printf("New: %s\n", transferred_photo_hash);
 
   // Get the sender of the photo transferred
   frame_origin = getFrameSender(received_frame.origin);
@@ -403,8 +389,6 @@ void transferPhoto(int origin, int socket_fd, Photo photo) {
     number_frames++;
   }
 
-  FILE *file = fopen("photo_sent.txt", "a");
-
   // Send required number of frames 
   while (processed_frames < number_frames) {
     // Reset values
@@ -418,13 +402,6 @@ void transferPhoto(int origin, int socket_fd, Photo photo) {
     send_frame = generatePhotoFrame(send_frame, photo_data);
     sendFrame(origin, socket_fd, send_frame);
 
-    // TODO: Remove code below 
-    // Print each data char received
-    for (int x = 0; x < FRAME_DATA_LENGTH; x++) {
-      fprintf(file, "%c", send_frame[16 + x]);
-    }
-    printf("Frame %d processed\n", processed_frames + 1);
-
     // Increment the number of processed frames
     processed_frames++;
 
@@ -434,8 +411,6 @@ void transferPhoto(int origin, int socket_fd, Photo photo) {
     // Add a delay between frames
     usleep(300);
   }
-
-  fclose(file);
 
   // Close the file descriptor of the photo
   close(photo.photo_fd);  
