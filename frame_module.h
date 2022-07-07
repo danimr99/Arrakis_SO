@@ -54,9 +54,15 @@ char *generateRequestSearchFrame(char *frame, char type, char *username, int use
 
 char *generateResponseSearchFrame(char *frame, char type, char *data);
 
+int getAtreidesPhotoFD(char *directory, char *photo_name);
+
 char *getPhotoMD5Hash(char *photo_path);
 
+char *generateRequestPhotoFrame(char *frame, char *photo_name);
+
 char *generatePhotoInformationFrame(char *frame, Photo photo);
+
+char *generateInexistentPhotoFrame(char *frame, char *data);
 
 char *generatePhotoFrame(char *frame, char photo_data[FRAME_DATA_LENGTH]);
 
@@ -72,7 +78,7 @@ char *generatePhotoErrorTransferFrame(char *frame);
 
 char *generateRequestLogoutFrame(char *frame, char type, char *username, int user_id);
 
-void sendFrame(int origin, int fd, char *frame);
+void sendFrame(int fd, char *frame);
 
 Frame receiveFrame(int fd);
 

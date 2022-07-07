@@ -191,7 +191,11 @@ void showSearchResults(int socket_fd, char *zip_code) {
     }
 
     // Print users list
-    sprintf(text, "Hi ha %d persones humanes a %s\n", list.users_quantity, zip_code);
+    if (list.users_quantity == 0 || list.users_quantity > 1) {
+      sprintf(text, "Feta la cerca\nHi ha %d persones humanes a %s\n", list.users_quantity, zip_code);
+    } else {
+      sprintf(text, "Feta la cerca\nHi ha %d persona humana a %s\n", list.users_quantity, zip_code);
+    }
     printMessage(text);
 
     for (int i = 0; i < list.users_quantity; i++) {
@@ -241,12 +245,14 @@ Photo getPhotoInformation(char *photo_name) {
     printMessage("ERROR: No s'ha troabat la imatge o no existeix\n");
   }
 
+  free(photo_path);
+
   return photo;
 }
 
 void simulateBashShell(FremenConfiguration fremen_configuration) {
   char *buffer = NULL, **command = NULL, *frame = NULL, text[MAX_LENGTH];
-  int args_counter = 0;
+  int args_counter = 0, received_photo_id;
   Frame received_frame;
   Photo photo;
 
@@ -286,7 +292,7 @@ void simulateBashShell(FremenConfiguration fremen_configuration) {
               frame = generateRequestLoginFrame(frame, LOGIN_TYPE, command[1], command[2]);
 
               // Send login frame to Atreides
-              sendFrame(ORIGIN_FREMEN, socket_fd, frame);
+              sendFrame(socket_fd, frame);
               free(frame);
 
               // Receive response from Atreides
@@ -336,7 +342,7 @@ void simulateBashShell(FremenConfiguration fremen_configuration) {
             frame = generateRequestSearchFrame(frame, SEARCH_TYPE, username, user_id, command[1]);
 
             // Send search frame to Atreides
-            sendFrame(ORIGIN_FREMEN, socket_fd, frame);
+            sendFrame(socket_fd, frame);
             free(frame);
 
             // Get response and show results
@@ -357,18 +363,19 @@ void simulateBashShell(FremenConfiguration fremen_configuration) {
             frame = initializeFrame(ORIGIN_FREMEN);
             photo = getPhotoInformation(command[1]);
             frame = generatePhotoInformationFrame(frame, photo);
-            sendFrame(ORIGIN_FREMEN, socket_fd, frame);
+            sendFrame(socket_fd, frame);
             free(frame);
 
             // Check if exists the photo introduced to be sent
             if (photo.photo_fd > 0) {
               // Send photo to Atreides using frames
               transferPhoto(ORIGIN_FREMEN, socket_fd, photo);
+              close(photo.photo_fd);
 
               // Read response
               received_frame = receiveFrame(socket_fd);
 
-              // TODO: Receive response result of the photo transfer from Atreides (success or error)
+              // Receive response result of the photo transfer from Atreides (success or error)
               if (received_frame.type == PHOTO_SUCCESSFUL_TYPE) {
                 printMessage("Foto enviada amb èxit a Atreides\n");
               } else if (received_frame.type == PHOTO_ERROR_TYPE) {
@@ -385,7 +392,31 @@ void simulateBashShell(FremenConfiguration fremen_configuration) {
         } else if (args_counter < PHOTO_REQUIRED_PARAMETERS) {
           printMessage("ERROR: Falten paràmetres per a la comanda PHOTO\n");
         } else {
-          printMessage("PHOTO\n");
+          // Check that user has connected to Atreides previously
+          if (socket_fd > 0) {
+            // Generate and send photo frame
+            frame = initializeFrame(ORIGIN_FREMEN);
+            frame = generateRequestPhotoFrame(frame, command[1]);
+            sendFrame(socket_fd, frame);
+            free(frame);
+
+            // Get response from Atreides
+            received_frame = receiveFrame(socket_fd);
+
+            // Check if Atreides has found the specified photo
+            if (strcmp(received_frame.data, "FILE NOT FOUND") == 0) {
+              printMessage("ERROR: No hi ha foto registrada\n");
+            } else {
+              // Get information of the photo that is going to be received
+              photo = receivePhotoInformationFrame(received_frame.data);
+
+              // Receive photo transfer from Atreides using frames and response with the result
+              received_photo_id = atoi(command[1]);
+              processPhotoFrame(received_photo_id, socket_fd, fremen_configuration.directory, photo);
+            }
+          } else {
+            printMessage("ERROR: No estàs connectat a Atreides encara. Prova de fer login\n");
+          }
         }
       } else if (strcmp(command[0], custom_commands[4]) == 0) {
         if (args_counter > LOGOUT_REQUIRED_PARAMETERS) {
@@ -400,7 +431,7 @@ void simulateBashShell(FremenConfiguration fremen_configuration) {
             frame = generateRequestLogoutFrame(frame, LOGOUT_TYPE, username, user_id);
 
             // Send logout frame
-            sendFrame(ORIGIN_FREMEN, socket_fd, frame);
+            sendFrame(socket_fd, frame);
             free(frame);
 
             // Close socket connection

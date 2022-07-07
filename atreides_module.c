@@ -259,7 +259,12 @@ void getUsersDataByZipCode(int client_fd, pthread_mutex_t *mutex, char *zip_code
   pthread_mutex_lock(mutex);
 
   // Print the number of users matching the zip code specified
-  sprintf(text, "Feta la cerca\nHi ha %d persones humanes a %s\n", users_counter, zip_code);
+  if (users_counter == 0 || users_counter > 1) {
+    sprintf(text, "Feta la cerca\nHi ha %d persones humanes a %s\n", users_counter, zip_code);
+  } else {
+    sprintf(text, "Feta la cerca\nHi ha %d persona humana a %s\n", users_counter, zip_code);
+  }
+  
   printMessage(text);
 
   // Iterate through each user on the list
@@ -275,7 +280,7 @@ void getUsersDataByZipCode(int client_fd, pthread_mutex_t *mutex, char *zip_code
         // Send existing data
         send_frame = initializeFrame(ORIGIN_ATREIDES);
         send_frame = generateResponseSearchFrame(send_frame, SEARCH_SUCCESSFUL_TYPE, data);
-        sendFrame(ORIGIN_ATREIDES, client_fd, send_frame);
+        sendFrame(client_fd, send_frame);
         free(data);
         free(send_frame);
 
@@ -295,14 +300,44 @@ void getUsersDataByZipCode(int client_fd, pthread_mutex_t *mutex, char *zip_code
   if (strlen(data) > 0) {
     send_frame = initializeFrame(ORIGIN_ATREIDES);
     send_frame = generateResponseSearchFrame(send_frame, SEARCH_SUCCESSFUL_TYPE, data);
-    sendFrame(ORIGIN_ATREIDES, client_fd, send_frame);
+    sendFrame(client_fd, send_frame);
     free(data);
     free(send_frame);
   }
 }
 
+Photo getPhotoInformation(int photo_fd, char *photo_name) {
+  char *buffer = NULL, *photo_path;
+  Photo photo;
+
+  // Get the photo file descriptor
+  photo.photo_fd = photo_fd;
+
+  asprintf(&buffer, "%s.jpg", photo_name);
+  strcpy(photo.name, buffer);
+  free(buffer);
+
+  // Get the image path
+  asprintf(&photo_path, "%s/%s", atreides_configuration.directory, photo.name);
+
+  // Get the MD5 hash of the photo
+  buffer = getPhotoMD5Hash(photo_path);
+  strcpy(photo.hash, buffer);
+  free(buffer);
+
+  // Get the size of the photo
+  struct stat stats;
+  if (stat(photo_path, &stats) == 0) {
+    photo.size = stats.st_size;
+  }
+
+  free(photo_path);
+
+  return photo;
+}
+
 void *runClientThread(void *args) {
-  char buffer[MAX_LENGTH], *send_frame, *zip_code;
+  char text[MAX_LENGTH], *send_frame, *zip_code, *transferable_photo_name;
   Frame frame;
   User user;
   Photo photo;
@@ -338,8 +373,8 @@ void *runClientThread(void *args) {
         addUser(user);
         updateUsers();
 
-        sprintf(buffer, "Rebut login de %s %s\nAssignat a ID %d\n", user.username, user.zip_code, user.id);
-        printMessage(buffer);
+        sprintf(text, "\nRebut login de %s %s\nAssignat a ID %d\n", user.username, user.zip_code, user.id);
+        printMessage(text);
 
         // Unblock restriction
         pthread_mutex_unlock(((ClientThreadArgs *)args)->mutex);
@@ -347,7 +382,9 @@ void *runClientThread(void *args) {
         // Send response to the Fremen client
         send_frame = initializeFrame(ORIGIN_ATREIDES);
         send_frame = generateResponseLoginFrame(send_frame, LOGIN_SUCCESSFUL_TYPE, user.id);
-        sendFrame(ORIGIN_ATREIDES, user.client_fd, send_frame);
+        sendFrame(user.client_fd, send_frame);
+
+        printMessage("Resposta enviada\n");
 
         // Free up memory of the frame sent
         free(send_frame);
@@ -355,16 +392,16 @@ void *runClientThread(void *args) {
         break;
       
       case SEARCH_TYPE:
-        // Receive user data from the request frame
-        user.username = readFromFrameUntilDelimiter(frame.data, 0, '*');
-        user.id = atoi(readFromFrameUntilDelimiter(frame.data, strlen(user.username) + 1, '*'));
+        // Receive zip code to look up from the request frame
         zip_code = readFromFrameUntilDelimiter(frame.data, strlen(user.username) + 2 + countDigits(user.id), '\0');
 
-        sprintf(buffer, "Rebut search %s de %s %d\n", zip_code, user.username, user.id);
-        printMessage(buffer);
+        sprintf(text, "\nRebut search %s de %s %d\n", zip_code, user.username, user.id);
+        printMessage(text);
 
         // Send users matching with the zip code as a response to the Fremen client
         getUsersDataByZipCode(((ClientThreadArgs *)args)->client_fd, ((ClientThreadArgs *)args)->mutex, zip_code);
+
+        printMessage("Resposta enviada\n");
 
         break;
 
@@ -372,31 +409,80 @@ void *runClientThread(void *args) {
         // Receive photo information frame
         photo = receivePhotoInformationFrame(frame.data);
 
-        sprintf(buffer, "Rebut send %s de %s %d\n", photo.name, user.username, user.id);
-        printMessage(buffer);
+        sprintf(text, "\nRebut send %s de %s %d\n", photo.name, user.username, user.id);
+        printMessage(text);
 
         // Receive photo transfer from Fremen using frames and response with the result
         if (strcmp(photo.hash, "\0") != 0) {
           processPhotoFrame(user.id, ((ClientThreadArgs *)args)->client_fd, atreides_configuration.directory, photo);
         } else {
-          sprintf(buffer, "ERROR: L'usuari %s amb ID %d ha intentat enviar una foto que no existeix\n", user.username, user.id);
-          printMessage(buffer);
+          sprintf(text, "ERROR: L'usuari %s amb ID %d ha intentat enviar una foto que no existeix\n", user.username, user.id);
+          printMessage(text);
         }
 
         break;
 
-      // TODO : All remaining cases (P)
+      case PHOTO_REQUEST_TYPE:
+        // Get user ID from frame to determine which photo has to be transferred
+        transferable_photo_name = readFromFrameUntilDelimiter(frame.data, 0, '\0');
+
+        sprintf(text, "\nRebut photo %s de %s %d\n", transferable_photo_name, user.username, user.id);
+        printMessage(text);
+
+        // Get the file descriptor of the specified photo
+        photo.photo_fd = getAtreidesPhotoFD(atreides_configuration.directory, transferable_photo_name);
+
+        // Initialize the response frame
+        send_frame = initializeFrame(ORIGIN_ATREIDES);
+
+        // Check if exists asked photo
+        if (photo.photo_fd > 0) {
+          // Get photo information
+          photo = getPhotoInformation(photo.photo_fd, transferable_photo_name);
+
+          sprintf(text, "Enviament %s\n", photo.name);
+          printMessage(text);
+
+          // Send photo information
+          send_frame = generatePhotoInformationFrame(send_frame, photo);
+          sendFrame(((ClientThreadArgs *)args)->client_fd, send_frame);
+
+          // Send photo to Fremen using frames
+          transferPhoto(ORIGIN_ATREIDES, ((ClientThreadArgs *)args)->client_fd, photo);
+
+          // Read response
+          frame = receiveFrame(((ClientThreadArgs *)args)->client_fd);
+
+          // Receive response result of the photo transfer from Atreides (success or error)
+          if (frame.type == PHOTO_SUCCESSFUL_TYPE) {
+            sprintf(text, "Foto enviada amb èxit a %s amb ID %d\n", user.username, user.id);
+            printMessage(text);
+          } else if (frame.type == PHOTO_ERROR_TYPE) {
+            printMessage("ERROR: No s'ha pogut enviar correctament la foto a Fremen\n");
+          }
+        } else {
+          sprintf(text, "ERROR: No s'ha trobat la foto %s.jpg\n", transferable_photo_name);
+          printMessage(text);
+
+          // Send error response
+          send_frame = generateInexistentPhotoFrame(send_frame, "FILE NOT FOUND");
+          sendFrame(((ClientThreadArgs *)args)->client_fd, send_frame);
+        }
+
+        printMessage("Resposta enviada\n");
+
+        free(send_frame);
+        free(transferable_photo_name);
+        close(photo.photo_fd);
+
+        break;
 
       case LOGOUT_TYPE:
         // Stop client thread loop
         is_exit = TRUE;
 
-        // Receive user data from the request frame
-        user.username = readFromFrameUntilDelimiter(frame.data, 0, '*');
-        user.id = atoi(readFromFrameUntilDelimiter(frame.data, strlen(user.username) + 1, '\0'));
-        
-        sprintf(buffer, "Rebut logout de %s %d\nDesconnectat d'Atreides\n", user.username, user.id);
-        printMessage(buffer);
+        sprintf(text, "\nRebut logout de %s %d\nDesconnectat d'Atreides\n", user.username, user.id);
+        printMessage(text);
 
         // FIXME: Free also on Atreides RsiHandler 
         // Free up memory of the user and the frame sent
@@ -411,7 +497,7 @@ void *runClientThread(void *args) {
 
       default:
         // TODO: Implementation of "Erroneous frames detection" from the PDF (EOF)
-        printMessage("ERROR: S'ha rebut un frame de tipus desconegut\n");
+        printMessage("\nERROR: S'ha rebut un frame de tipus desconegut\n");
 
         break;
     }

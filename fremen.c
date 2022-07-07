@@ -22,7 +22,7 @@ void RsiHandler(void) {
     frame = generateRequestLogoutFrame(frame, LOGOUT_TYPE, username, user_id);
 
     // Send logout frame
-    sendFrame(ORIGIN_FREMEN, socket_fd, frame);
+    sendFrame(socket_fd, frame);
     free(frame);
     free(username);
 

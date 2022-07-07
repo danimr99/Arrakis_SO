@@ -173,6 +173,20 @@ char *generateResponseSearchFrame(char *frame, char type, char *data) {
   return frame;
 }
 
+int getAtreidesPhotoFD(char *directory, char *photo_name) {
+  char *destination_path;
+  int destination_fd;
+
+  // Concatenate the directory and the name of the photo
+  asprintf(&destination_path, "%s/%s.jpg", directory, photo_name);
+
+  // Open file descriptor of the destination path
+  destination_fd = open(destination_path, O_RDONLY);
+  free(destination_path);
+
+  return destination_fd;
+}
+
 char *getPhotoMD5Hash(char *photo_path) {
   int pipe_fd[2];
   pid_t pid;
@@ -222,6 +236,33 @@ char *getPhotoMD5Hash(char *photo_path) {
   return NULL;
 }
 
+char *generateRequestPhotoFrame(char *frame, char *photo_name) {
+  char *buffer = NULL;
+  int i, frame_length;
+
+  // Add frame type
+  frame[FRAME_ORIGIN_LENGTH] = PHOTO_REQUEST_TYPE;
+
+  // Concatenate data (user id)
+  asprintf(&buffer, "%s", photo_name);
+
+  // Get the length of the frame
+  frame_length = FRAME_ORIGIN_LENGTH + FRAME_TYPE_LENGTH;
+
+  // Add buffer to frame
+  for (i = frame_length; buffer[i - frame_length] != '\0'; i++) {
+    frame[i] = buffer[i - frame_length];
+  }
+
+  // Fill with '\0' the rest of the data
+  frame = fill(frame, i, FRAME_DATA_LENGTH);
+
+  // Free buffer
+  free(buffer);
+
+  return frame;  
+}
+
 char *generatePhotoInformationFrame(char *frame, Photo photo) {
   char *buffer = NULL;
   int i, frame_length;
@@ -231,6 +272,33 @@ char *generatePhotoInformationFrame(char *frame, Photo photo) {
 
   // Concatenate data (user id)
   asprintf(&buffer, "%s*%d*%s", photo.name, photo.size, photo.hash);
+
+  // Get the length of the frame
+  frame_length = FRAME_ORIGIN_LENGTH + FRAME_TYPE_LENGTH;
+
+  // Add buffer to frame
+  for (i = frame_length; buffer[i - frame_length] != '\0'; i++) {
+    frame[i] = buffer[i - frame_length];
+  }
+
+  // Fill with '\0' the rest of the data
+  frame = fill(frame, i, FRAME_DATA_LENGTH);
+
+  // Free buffer
+  free(buffer);
+
+  return frame;
+}
+
+char *generateInexistentPhotoFrame(char *frame, char *data) {
+  char *buffer = NULL;
+  int i, frame_length;
+
+  // Add frame type
+  frame[FRAME_ORIGIN_LENGTH] = PHOTO_INFO_TYPE;
+
+  // Concatenate data (user id)
+  asprintf(&buffer, "%s", data);
 
   // Get the length of the frame
   frame_length = FRAME_ORIGIN_LENGTH + FRAME_TYPE_LENGTH;
@@ -353,7 +421,7 @@ void processPhotoFrame(int user_id, int socket_fd, char *directory, Photo photo)
   Frame received_frame;
   char *file_name = NULL, *destination_path = NULL, text[MAX_LENGTH], transferred_photo_hash[PHOTO_HASH_LENGTH],
     *response_frame = NULL, *buffer = NULL;
-  int destination_fd, number_frames = 0, remainder_data = 0, processed_frames = 0, frame_origin;
+  int destination_fd, number_frames = 0, remainder_data = 0, processed_frames = 0, frame_origin, frame_destination;
 
   // Concatenate destination directory with the renamed image
   asprintf(&file_name, "%d.jpg", user_id);
@@ -397,22 +465,28 @@ void processPhotoFrame(int user_id, int socket_fd, char *directory, Photo photo)
 
   // Set the receiver of the photo transferred as the sender of the response frames
   if (frame_origin == ORIGIN_FREMEN) {
-    frame_origin = ORIGIN_ATREIDES;
+    frame_destination = ORIGIN_ATREIDES;
   } else if (frame_origin == ORIGIN_ATREIDES) {
-    frame_origin = ORIGIN_FREMEN;
+    frame_destination = ORIGIN_FREMEN;
   }
 
   // Initialize the response frame
-  response_frame = initializeFrame(frame_origin);
+  response_frame = initializeFrame(frame_destination);
 
   // Check photo integrity after transfer
   if (strcmp(transferred_photo_hash, photo.hash) == 0) {
     // Generate photo success frame
     response_frame = generatePhotoSuccessTransferFrame(response_frame);
 
-    // Print message informing that the photo was saved with the new name
-    sprintf(text, "Guardada com %s\n", file_name);
-    printMessage(text);
+    // Check the receiver of the photo 
+    if (frame_destination == ORIGIN_ATREIDES) {
+      // Print message informing that the photo was saved with the new name
+      sprintf(text, "Guardada com %s\n", file_name);
+      printMessage(text);
+    } else if(frame_destination == ORIGIN_FREMEN) {
+      // Print message informing that the photo was downloaded
+      printMessage("Foto descarregada\n");
+    }    
   } else {
     // Generate photo error frame
     response_frame = generatePhotoErrorTransferFrame(response_frame);
@@ -423,7 +497,7 @@ void processPhotoFrame(int user_id, int socket_fd, char *directory, Photo photo)
   }
 
   // Send photo response
-  sendFrame(frame_origin, socket_fd, response_frame);
+  sendFrame(socket_fd, response_frame);
 
   // Free up memory
   free(file_name);
@@ -454,7 +528,7 @@ void transferPhoto(int origin, int socket_fd, Photo photo) {
     // Initialize and send the photo data frame
     send_frame = initializeFrame(origin);
     send_frame = generatePhotoFrame(send_frame, photo_data);
-    sendFrame(origin, socket_fd, send_frame);
+    sendFrame(socket_fd, send_frame);
 
     // Increment the number of processed frames
     processed_frames++;
@@ -497,13 +571,8 @@ char *generateRequestLogoutFrame(char *frame, char type, char *username, int use
   return frame;
 }
 
-void sendFrame(int origin, int fd, char *frame) {
+void sendFrame(int fd, char *frame) {
   write(fd, frame, FRAME_LENGTH);
-
-  // Check the origin introduced
-  if (origin == ORIGIN_ATREIDES) {
-    printMessage("Resposta enviada\n");
-  }
 }
 
 Frame receiveFrame(int fd) {
