@@ -149,7 +149,7 @@ int existsUser(User user) {
   // Iterate through each user on the list
   for (int i = 0; i < user_list.users_quantity; i++) {
     // Check if user exists on the register (username and zip code matches)
-    if (strcmp(user_list.users[i].username, user.username) == 0 && strcmp(user_list.users[i].username, user.username) == 0) {
+    if (strcmp(user_list.users[i].username, user.username) == 0 && strcmp(user_list.users[i].zip_code, user.zip_code) == 0) {
       return TRUE;
     }
   } 
@@ -276,7 +276,7 @@ void getUsersDataByZipCode(int client_fd, pthread_mutex_t *mutex, char *zip_code
       printMessage(text);
 
       // Check if user can be added to the data
-      if ((strlen(data) + strlen(user_list.users[i].username) + countDigits(user_list.users[i].id)) > FRAME_DATA_LENGTH) {
+      if ((strlen(data) + strlen(user_list.users[i].username) + countDigits(user_list.users[i].id) + 2) > FRAME_DATA_LENGTH) {
         // Send existing data
         send_frame = initializeFrame(ORIGIN_ATREIDES);
         send_frame = generateResponseSearchFrame(send_frame, SEARCH_SUCCESSFUL_TYPE, data);
@@ -293,9 +293,6 @@ void getUsersDataByZipCode(int client_fd, pthread_mutex_t *mutex, char *zip_code
     }
   }
 
-  // Unblock restriction
-  pthread_mutex_unlock(mutex);
-
   // Check if there is data remaining to be sent
   if (strlen(data) > 0) {
     send_frame = initializeFrame(ORIGIN_ATREIDES);
@@ -304,6 +301,9 @@ void getUsersDataByZipCode(int client_fd, pthread_mutex_t *mutex, char *zip_code
     free(data);
     free(send_frame);
   }
+
+  // Unblock restriction
+  pthread_mutex_unlock(mutex);  
 }
 
 Photo getPhotoInformation(int photo_fd, char *photo_name) {
@@ -412,8 +412,10 @@ void *runClientThread(void *args) {
         sprintf(text, "\nRebut send %s de %s %d\n", photo.name, user.username, user.id);
         printMessage(text);
 
+        printf("Hash received: %s\n", photo.hash);
+
         // Receive photo transfer from Fremen using frames and response with the result
-        if (strcmp(photo.hash, "\0") != 0) {
+        if (!isEmpty(photo.hash)) {
           processPhotoFrame(user.id, ((ClientThreadArgs *)args)->client_fd, atreides_configuration.directory, photo);
         } else {
           sprintf(text, "ERROR: L'usuari %s amb ID %d ha intentat enviar una foto que no existeix\n", user.username, user.id);

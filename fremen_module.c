@@ -242,7 +242,7 @@ Photo getPhotoInformation(char *photo_name) {
       photo.size = stats.st_size;
     }
   } else {
-    printMessage("ERROR: No s'ha troabat la imatge o no existeix\n");
+    printMessage("ERROR: No s'ha trobat la imatge o no existeix\n");
   }
 
   free(photo_path);

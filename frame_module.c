@@ -45,7 +45,6 @@ char *initializeFrame(int origin) {
     sprintf(frame, "ATREIDES");
   } else {
     printMessage("ERROR: S'ha intentat enviar un frame des d'un origen desconegut\n");
-    raise(SIGINT);
   }
 
   // Fill with '\0' the rest of the origin
