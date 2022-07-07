@@ -295,6 +295,60 @@ Photo receivePhotoInformationFrame(char *data) {
   return photo;
 }
 
+char *generatePhotoSuccessTransferFrame(char *frame) {
+  char *buffer = NULL;
+  int i, frame_length;
+
+  // Add frame type
+  frame[FRAME_ORIGIN_LENGTH] = PHOTO_SUCCESSFUL_TYPE;
+
+  // Concatenate data
+  asprintf(&buffer, "%s", "IMAGE OK");
+
+  // Get the length of the frame
+  frame_length = FRAME_ORIGIN_LENGTH + FRAME_TYPE_LENGTH;
+
+  // Add buffer to frame
+  for (i = frame_length; buffer[i - frame_length] != '\0'; i++) {
+    frame[i] = buffer[i - frame_length];
+  }
+
+  // Fill with '\0' the rest of the data
+  frame = fill(frame, i, FRAME_DATA_LENGTH);
+
+  // Free buffer
+  free(buffer);
+
+  return frame;
+}
+
+char *generatePhotoErrorTransferFrame(char *frame) {
+  char *buffer = NULL;
+  int i, frame_length;
+
+  // Add frame type
+  frame[FRAME_ORIGIN_LENGTH] = PHOTO_ERROR_TYPE;
+
+  // Concatenate data
+  asprintf(&buffer, "%s", "IMAGE KO");
+
+  // Get the length of the frame
+  frame_length = FRAME_ORIGIN_LENGTH + FRAME_TYPE_LENGTH;
+
+  // Add buffer to frame
+  for (i = frame_length; buffer[i - frame_length] != '\0'; i++) {
+    frame[i] = buffer[i - frame_length];
+  }
+
+  // Fill with '\0' the rest of the data
+  frame = fill(frame, i, FRAME_DATA_LENGTH);
+
+  // Free buffer
+  free(buffer);
+
+  return frame;
+}
+
 void processPhotoFrame(int user_id, int socket_fd, char *directory, Photo photo) {
   Frame received_frame;
   char *file_name = NULL, *destination_path = NULL, text[MAX_LENGTH], transferred_photo_hash[PHOTO_HASH_LENGTH],
@@ -353,15 +407,15 @@ void processPhotoFrame(int user_id, int socket_fd, char *directory, Photo photo)
 
   // Check photo integrity after transfer
   if (strcmp(transferred_photo_hash, photo.hash) == 0) {
-    // TODO: Generate photo success frame
-    //response_frame = generatePhotoSuccessTransferFrame(response_frame);
+    // Generate photo success frame
+    response_frame = generatePhotoSuccessTransferFrame(response_frame);
 
     // Print message informing that the photo was saved with the new name
     sprintf(text, "Guardada com %s\n", file_name);
     printMessage(text);
   } else {
-    // TODO: Generate photo error frame
-    //response_frame = generatePhotoErrorTransferFrame(response_frame);
+    // Generate photo error frame
+    response_frame = generatePhotoErrorTransferFrame(response_frame);
 
     // Print message informing that the photo was not identical (hash integrity)
     sprintf(text, "ERROR: El hash md5sum de la foto %s no és correcte\n", file_name);

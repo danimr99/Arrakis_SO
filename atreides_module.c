@@ -375,7 +375,7 @@ void *runClientThread(void *args) {
         sprintf(buffer, "Rebut send %s de %s %d\n", photo.name, user.username, user.id);
         printMessage(buffer);
 
-        // FIXME: Receive photo transfer from Fremen using frames and response with the result
+        // Receive photo transfer from Fremen using frames and response with the result
         if (strcmp(photo.hash, "\0") != 0) {
           processPhotoFrame(user.id, ((ClientThreadArgs *)args)->client_fd, atreides_configuration.directory, photo);
         } else {

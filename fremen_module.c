@@ -301,7 +301,7 @@ void simulateBashShell(FremenConfiguration fremen_configuration) {
                 // Get user ID from the response
                 user_id = atoi(received_frame.data);
                 
-                sprintf(text, "Benvingut %s. Tens ID %d.\nAra estàs connectat a atreides\n", username, user_id);
+                sprintf(text, "Benvingut %s. Tens ID %d.\nAra estàs connectat a Atreides\n", username, user_id);
                 printMessage(text);
               } else if (received_frame.type == LOGIN_ERROR_TYPE) {
                 printMessage("ERROR: No s'ha pogut fer login\n");
@@ -365,11 +365,16 @@ void simulateBashShell(FremenConfiguration fremen_configuration) {
               // Send photo to Atreides using frames
               transferPhoto(ORIGIN_FREMEN, socket_fd, photo);
 
-              // TODO: Read response
+              // Read response
+              received_frame = receiveFrame(socket_fd);
 
               // TODO: Receive response result of the photo transfer from Atreides (success or error)
+              if (received_frame.type == PHOTO_SUCCESSFUL_TYPE) {
+                printMessage("Foto enviada amb èxit a Atreides\n");
+              } else if (received_frame.type == PHOTO_ERROR_TYPE) {
+                printMessage("ERROR: No s'ha pogut enviar correctament la foto a Atreides\n");
+              }
             }
-
           } else {
             printMessage("ERROR: No estàs connectat a Atreides encara. Prova de fer login\n");
           }
