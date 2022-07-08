@@ -208,9 +208,6 @@ char *getPhotoMD5Hash(char *photo_path) {
 
     // Run md5sum command
     execl("/bin/md5sum", "md5sum", photo_path, NULL);
-
-    // Exit child process
-    //exit(0);
   } else {
     // Code to be executed by the parent
     // Wait until child has terminated its execution

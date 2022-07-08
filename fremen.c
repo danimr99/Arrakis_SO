@@ -4,38 +4,65 @@
 FremenConfiguration fremen_configuration;
 extern char *username;
 extern int user_id, socket_fd;
+extern DownloadedPhotosList downloaded_photos_list;
 
 // Function to handle signals
-void RsiHandler(void) {
+void RsiHandler(int signal_number) {
   char *frame = NULL;
 
-  printMessage("\nAturant Fremen...\n");
+  // Signal received is a SIGINT (Ctrl + C)
+  if (signal_number == SIGINT) {
+    printMessage("\nAturant Fremen...\n");
 
-  // Free up memory
-  free(fremen_configuration.ip);
-  free(fremen_configuration.directory);
+    // Free up memory
+    free(fremen_configuration.ip);
+    free(fremen_configuration.directory);
 
-  // Close socket connection if exists
-  if (socket_fd > 0) {
-    // Generate logout frame
-    frame = initializeFrame(ORIGIN_FREMEN);
-    frame = generateRequestLogoutFrame(frame, LOGOUT_TYPE, username, user_id);
+    // Check if Fremen client has downloaded any photo from Atreides
+    if (downloaded_photos_list.photos_quantity > 0) {
+      // Iterate through the list of downloaded photos
+      for (int i = 0; i < downloaded_photos_list.photos_quantity; i++) {
+        // Free memory for the photo name deleted
+        free(downloaded_photos_list.photo_names[i]);
+      }
 
-    // Send logout frame
-    sendFrame(socket_fd, frame);
-    free(frame);
-    free(username);
+      free(downloaded_photos_list.photo_names);
+    }
 
-    // Close socket connection
-    close(socket_fd);
-    socket_fd = 0;
+    // Close socket connection if exists
+    if (socket_fd > 0) {
+      // Generate logout frame
+      frame = initializeFrame(ORIGIN_FREMEN);
+      frame = generateRequestLogoutFrame(frame, LOGOUT_TYPE, username, user_id);
+
+      // Send logout frame
+      sendFrame(socket_fd, frame);
+      free(frame);
+      free(username);
+
+      // Close socket connection
+      close(socket_fd);
+      socket_fd = 0;
+    }
+
+    // Reprogram Ctrl + C signal (SIGINT) to default behaviour
+    signal(SIGINT, SIG_DFL);
+
+    // Self shutdown program using Ctrl + C signal (SIGINT)
+    raise(SIGINT);
   }
 
-  // Reprogram Ctrl + C signal (SIGINT) to default behaviour
-  signal(SIGINT, SIG_DFL);
+  // Signal received is a SIGALRM
+  if (signal_number == SIGALRM) {
+    // Schedule Fremen configuration clean time period recursively
+    alarm(fremen_configuration.clean_time);
 
-  // Self shutdown program using Ctrl + C signal (SIGINT)
-  raise(SIGINT);
+    // Check if Fremen client has downloaded any photo from Atreides
+    if (downloaded_photos_list.photos_quantity > 0) {
+      // Delete all files downloaded from Atreides
+      deleteDownloadedPhotos();
+    }
+  } 
 }
 
 int main(int argc, char **argv) {
@@ -58,6 +85,12 @@ int main(int argc, char **argv) {
   if (config_file_fd > 0) {
     // Get data from Fremen configuration file
     fremen_configuration = getFremenConfiguration(config_file_fd);
+
+    // Handle SIGALRM signal
+    signal(SIGALRM, (void *)RsiHandler);
+
+    // Schedule Fremen configuration clean time period for the first time
+    alarm(fremen_configuration.clean_time);
 
     // Simulate bash shell
     simulateBashShell(fremen_configuration);

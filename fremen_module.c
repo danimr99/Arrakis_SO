@@ -7,6 +7,7 @@ const char *custom_commands[] = {"login", "search", "send", "photo", "logout"};
 extern FremenConfiguration fremen_configuration;
 char *username = NULL;
 int user_id, socket_fd = 0;
+DownloadedPhotosList downloaded_photos_list;
 
 FremenConfiguration getFremenConfiguration(int config_file_fd) {
   FremenConfiguration fremen_configuration;
@@ -47,6 +48,68 @@ FremenConfiguration getFremenConfiguration(int config_file_fd) {
   close(config_file_fd);
 
   return fremen_configuration;
+}
+
+int existsDownloadedPhoto(char *photo_name) {
+  // Iterate through the list of downloaded photos
+  for (int i = 0; i < downloaded_photos_list.photos_quantity; i++) {
+    // Check if downloaded photos list already contains the photo name
+    if (strcmp(downloaded_photos_list.photo_names[i], photo_name) == 0) {
+      return TRUE;
+    }
+  }
+
+  return FALSE;
+}
+
+void addDownloadedPhotoToList(char *photo_name) {
+  // Increase counter of downloaded photos
+  downloaded_photos_list.photos_quantity++;
+
+  // Check if is the first photo downloaded
+  if (downloaded_photos_list.photos_quantity == 1) {
+    // Reserve memory dynamically for the list of photo names
+    downloaded_photos_list.photo_names = (char **)malloc(downloaded_photos_list.photos_quantity * sizeof(downloaded_photos_list.photo_names));
+  } else {
+    // Reserve memory dynamically for the list of photo names
+    downloaded_photos_list.photo_names = (char **)realloc(downloaded_photos_list.photo_names, 
+      downloaded_photos_list.photos_quantity * sizeof(downloaded_photos_list.photo_names));
+  }
+
+  // Reserve memory dynamically for the photo name to be added
+  downloaded_photos_list.photo_names[downloaded_photos_list.photos_quantity - 1] = (char *)malloc((strlen(photo_name) + 1) * sizeof(char));
+
+  // Assign values to the list
+  strcpy(downloaded_photos_list.photo_names[downloaded_photos_list.photos_quantity - 1], photo_name);
+}
+
+void deleteDownloadedPhotos() {
+  char *downloaded_photo_path = NULL, *buffer = NULL, **command = NULL;
+
+  // Iterate through the list of downloaded photos
+  for (int i = 0; i < downloaded_photos_list.photos_quantity; i++) {
+    // Concatenate the directory and the name of the photo
+    asprintf(&downloaded_photo_path, "%s/%s", fremen_configuration.directory, downloaded_photos_list.photo_names[i]);
+
+    // Concatenate rm command
+    asprintf(&buffer, "rm %s", downloaded_photo_path);
+
+    // Split concatenated command
+    command = split(buffer, " ");
+
+    // Run rm command
+    runLinuxCommand(command);
+
+    // Free memory for the photo name deleted
+    free(downloaded_photos_list.photo_names[i]);
+    free(downloaded_photo_path);
+    free(buffer);
+    free(command);
+  }
+
+  // Reset values for the list of downloaded photos
+  downloaded_photos_list.photos_quantity = 0;
+  free(downloaded_photos_list.photo_names);
 }
 
 char **convertCommandToLowerCase(char **command) {
@@ -258,6 +321,9 @@ void simulateBashShell(FremenConfiguration fremen_configuration) {
 
   printMessage("Benvingut a Fremen");
 
+  // Set default number of downloaded photos
+  downloaded_photos_list.photos_quantity = 0;
+
   while(TRUE) {
     printMessage("\n$ ");
 
@@ -410,6 +476,12 @@ void simulateBashShell(FremenConfiguration fremen_configuration) {
               // Get information of the photo that is going to be received
               photo = receivePhotoInformationFrame(received_frame.data);
 
+              // Check if photo was already downloaded by the Fremen client
+              if (!existsDownloadedPhoto(photo.name)) {
+                // Add downloaded photo to the list
+                addDownloadedPhotoToList(photo.name);
+              }
+              
               // Receive photo transfer from Atreides using frames and response with the result
               received_photo_id = atoi(command[1]);
               processPhotoFrame(received_photo_id, socket_fd, fremen_configuration.directory, photo);

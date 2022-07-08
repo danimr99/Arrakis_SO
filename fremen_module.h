@@ -26,6 +26,11 @@ typedef struct {
   User *users;
 } UsersList;
 
+typedef struct {
+  int photos_quantity;
+  char **photo_names;
+} DownloadedPhotosList;
+
 #define LOGIN_REQUIRED_PARAMETERS 2
 #define SEARCH_REQUIRED_PARAMETERS 1
 #define SEND_REQUIRED_PARAMETERS 1
@@ -34,6 +39,8 @@ typedef struct {
 
 FremenConfiguration getFremenConfiguration(int config_file_fd);
 
-void simulateBashShell(FremenConfiguration fremen_configuration);
-
 void runLinuxCommand(char **command);
+
+void deleteDownloadedPhotos();
+
+void simulateBashShell(FremenConfiguration fremen_configuration);
