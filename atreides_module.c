@@ -412,10 +412,8 @@ void *runClientThread(void *args) {
         sprintf(text, "\nRebut send %s de %s %d\n", photo.name, user.username, user.id);
         printMessage(text);
 
-        printf("Hash received: %s\n", photo.hash);
-
         // Receive photo transfer from Fremen using frames and response with the result
-        if (!isEmpty(photo.hash)) {
+        if (!isEmpty(photo.hash) && strlen(photo.hash) == (PHOTO_HASH_LENGTH - 1)) {
           processPhotoFrame(user.id, ((ClientThreadArgs *)args)->client_fd, atreides_configuration.directory, photo);
         } else {
           sprintf(text, "ERROR: L'usuari %s amb ID %d ha intentat enviar una foto que no existeix\n", user.username, user.id);
