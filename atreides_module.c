@@ -1,5 +1,6 @@
 #include "atreides_module.h"
 
+// Global variables
 extern UsersList user_list;
 extern AtreidesConfiguration atreides_configuration;
 
@@ -339,8 +340,8 @@ Photo getPhotoInformation(int photo_fd, char *photo_name) {
 void *runClientThread(void *args) {
   char text[MAX_LENGTH], *send_frame, *zip_code, *transferable_photo_name;
   Frame frame;
-  User user;
   Photo photo;
+  User user;
   int is_exit = FALSE;
 
   while (!is_exit) {
@@ -484,7 +485,6 @@ void *runClientThread(void *args) {
         sprintf(text, "\nRebut logout de %s %d\nDesconnectat d'Atreides\n", user.username, user.id);
         printMessage(text);
 
-        // FIXME: Free also on Atreides RsiHandler 
         // Free up memory of the user and the frame sent
         free(user.username);
         free(user.zip_code);
@@ -496,8 +496,13 @@ void *runClientThread(void *args) {
         break;
 
       default:
-        // TODO: Implementation of "Erroneous frames detection" from the PDF (EOF)
+        // Implementation of erroneous frames detection
         printMessage("\nERROR: S'ha rebut un frame de tipus desconegut\n");
+
+        send_frame = initializeFrame(ORIGIN_ATREIDES);
+        send_frame = generateUnknownTypeFrame(send_frame);
+        sendFrame(((ClientThreadArgs *)args)->client_fd, send_frame);
+        free(send_frame);
 
         break;
     }

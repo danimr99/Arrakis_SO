@@ -570,6 +570,33 @@ char *generateRequestLogoutFrame(char *frame, char type, char *username, int use
   return frame;
 }
 
+char *generateUnknownTypeFrame(char *frame) {
+  char *buffer = NULL;
+  int i, frame_length;
+
+  // Add frame type
+  frame[FRAME_ORIGIN_LENGTH] = UNKNOWN_TYPE;
+
+  // Concatenate data
+  asprintf(&buffer, "%s", "ERROR T");
+
+  // Get the length of the frame
+  frame_length = FRAME_ORIGIN_LENGTH + FRAME_TYPE_LENGTH;
+
+  // Add buffer to frame
+  for (i = frame_length; buffer[i - frame_length] != '\0'; i++) {
+    frame[i] = buffer[i - frame_length];
+  }
+
+  // Fill with '\0' the rest of the data
+  frame = fill(frame, i, FRAME_DATA_LENGTH);
+
+  // Free buffer
+  free(buffer);
+
+  return frame;
+}
+
 void sendFrame(int fd, char *frame) {
   write(fd, frame, FRAME_LENGTH);
 }

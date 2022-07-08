@@ -44,6 +44,8 @@ typedef struct {
 
 #define LOGOUT_TYPE 'Q' 
 
+#define UNKNOWN_TYPE 'Z'
+
 char *initializeFrame(int origin);
 
 char *generateRequestLoginFrame(char *frame, char type, char *name, char *zip_code);
@@ -77,6 +79,8 @@ char *generatePhotoSuccessTransferFrame(char *frame);
 char *generatePhotoErrorTransferFrame(char *frame);
 
 char *generateRequestLogoutFrame(char *frame, char type, char *username, int user_id);
+
+char *generateUnknownTypeFrame(char *frame);
 
 void sendFrame(int fd, char *frame);
 
