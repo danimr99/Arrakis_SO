@@ -16,14 +16,11 @@ void RsiHandler(int signal_number) {
 
     // Freee up memory
     free(process_owner);
-    free(processes);
 
     // Check if exists any Fremen process to free up memory
     if (fremen_list.fremen_quantity > 0) {
-      for (int i = 0; i < fremen_list.fremen_quantity; i++) {
-        free(fremen_list.fremen_pids[i]);
-      }
-
+      // Free up memory for the Fremen list
+      free(processes);
       free(fremen_list.fremen_pids);
     }
 
