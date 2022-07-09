@@ -62,7 +62,7 @@ void RsiHandler(int signal_number) {
       // Delete all files downloaded from Atreides
       deleteDownloadedPhotos();
     }
-  } 
+  }
 }
 
 int main(int argc, char **argv) {
@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
     printMessage("ERROR: Falta especificar el fitxer de configuració de Fremen\n");
 
     return 0;
-  }
+  } 
 
   // Handle Ctrl + C signal (SIGINT)
   signal(SIGINT, (void *)RsiHandler);

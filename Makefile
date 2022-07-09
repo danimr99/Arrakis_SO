@@ -1,4 +1,4 @@
-all: fremen atreides clean
+all: fremen atreides harkonen clean
 
 generic_module.o: generic_module.c generic_module.h
 	gcc -c generic_module.c
@@ -34,8 +34,22 @@ atreides_test:
 	clear
 	./atreides atreides_config.txt
 
+harkonen_module.o: harkonen_module.c harkonen_module.h
+	gcc -c harkonen_module.c
+
+harkonen.o: harkonen.c generic_module.h harkonen_module.h
+	gcc -c harkonen.c -Wall -Wextra
+
+harkonen: harkonen.o generic_module.o harkonen_module.o
+	gcc harkonen.o generic_module.o harkonen_module.o -o harkonen -Wall -Wextra -ggdb3 -g
+
+harkonen_test:
+	make
+	clear
+	./harkonen 5
+
 clean:
 	rm -f *.o
 
 clean_all:
-	rm -f *.o fremen atreides
+	rm -f *.o fremen atreides harkonen

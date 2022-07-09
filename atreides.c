@@ -57,7 +57,7 @@ int main(int argc, char **argv) {
     printMessage("ERROR: Falta especificar el fitxer de configuració d'Atreides\n");
 
     return 0;
-  }
+  } 
 
   // Handle Ctrl + C signal (SIGINT)
   signal(SIGINT, (void *)RsiHandler);
