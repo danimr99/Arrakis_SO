@@ -1,5 +1,10 @@
 #include "harkonen_module.h"
 
+/*
+ * Function that retrieves the process owner.
+ * 
+ * @return Name of the process owner.
+*/
 char *getProcessOwner() {
   int pipe_fd[2], index = 0;
   pid_t pid;
@@ -59,6 +64,13 @@ char *getProcessOwner() {
   return NULL;
 }
 
+/*
+ * Function that retrieves the PIDs from all the running Fremen processes 
+ * executed by the process owner.
+ * 
+ * @param process_owner Name of the process owner.
+ * @return All the PIDs splitted by space.
+*/
 char *getFremenProcessesByOwner(char *process_owner) {
   int pipe_fd[2], index = 0;
   pid_t pid;
@@ -121,10 +133,21 @@ char *getFremenProcessesByOwner(char *process_owner) {
   return NULL;
 }
 
+/*
+ * Function that generates a number between 0 and max.
+ * 
+ * @param max Maximum number.
+ * @return Random number generated.
+*/
 int generateRandom(int max) {
   return rand() % max;
 }
 
+/*
+ * Function that kills a Fremen process by PID.
+ * 
+ * @param process_pid PID of a Fremen process.
+*/
 void killProcess(char *process_pid) {
   char text[MAX_LENGTH];
   pid_t pid;

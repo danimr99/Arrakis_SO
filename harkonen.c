@@ -5,7 +5,9 @@ int time;
 char *process_owner;
 FremenProcessesList fremen_list;
 
-// Function to handle signals
+/*
+ * Function that handles any signal that receives Harkonen.
+*/
 void RsiHandler(int signal_number) {
   char *processes = NULL, text[MAX_LENGTH];
   int random;

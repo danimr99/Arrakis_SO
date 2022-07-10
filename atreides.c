@@ -6,7 +6,9 @@ int socket_fd = 0;
 pthread_mutex_t mutex;
 UsersList user_list;
 
-// Function to handle signals
+/*
+ * Function that handles any signal that receives Atreides.
+*/
 void RsiHandler(void) {
   printMessage("\nAturant Atreides...\n");
 

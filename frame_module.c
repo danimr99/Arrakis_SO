@@ -1,5 +1,13 @@
 #include "frame_module.h"
 
+/*
+ * Function that fills the remaining positions of an array with '\0'.
+ *
+ * @param array Array to fill.
+ * @param index Index of the starting position to fill.
+ * @param size Limit of positions of the array.
+ * @return Array filled.
+*/
 char *fill(char * array, int index, int size) {
   for (int i = index; i < size; i++) {
     array[i] = '\0';
@@ -8,6 +16,14 @@ char *fill(char * array, int index, int size) {
   return array;
 }
 
+/*
+ * Function that reads from a frame between the index position until a delimiter.
+ *
+ * @param array Frame.
+ * @param index Index of the starting position to read.
+ * @param delimiter Delimiter.
+ * @return Array from frame until delimiter.
+*/
 char *readFromFrameUntilDelimiter(char *array, int index, char delimiter) {
   char *text = NULL;
   int i = 0;
@@ -29,6 +45,12 @@ char *readFromFrameUntilDelimiter(char *array, int index, char delimiter) {
   return text;
 }
 
+/*
+ * Function that initializes a frame with an origin.
+ *
+ * @param origin Sender of the frame.
+ * @return Frame with the origin set up.
+*/
 char *initializeFrame(int origin) {
   char *frame;
 
@@ -53,6 +75,12 @@ char *initializeFrame(int origin) {
   return frame;
 }
 
+/*
+ * Function that checks who is the sender of a frame.
+ *
+ * @param frame_origin Origin field of a frame.
+ * @return Sender of the frame.
+*/
 int getFrameSender(char frame_origin[FRAME_ORIGIN_LENGTH]) {
   if (strcmp(frame_origin, "FREMEN") == 0) {
     return ORIGIN_FREMEN;
@@ -64,6 +92,15 @@ int getFrameSender(char frame_origin[FRAME_ORIGIN_LENGTH]) {
   }
 }
 
+/*
+ * Function that generates the request frame to login.
+ *
+ * @param frame Frame to fill.
+ * @param type Type of login frame.
+ * @param name Name of the user to login.
+ * @param zip_code Zip code of the user to login.
+ * @return Login request frame filled.
+*/
 char *generateRequestLoginFrame(char *frame, char type, char *name, char *zip_code) {
   char *buffer = NULL;
   int i, frame_length;
@@ -91,6 +128,14 @@ char *generateRequestLoginFrame(char *frame, char type, char *name, char *zip_co
   return frame;
 }
 
+/*
+ * Function that generates the login response frame.
+ *
+ * @param frame Frame to fill.
+ * @param type Type of login frame.
+ * @param id ID of the logged in user.
+ * @return Login response frame filled.
+*/
 char *generateResponseLoginFrame(char *frame, char type, int id) {
   char *buffer = NULL;
   int i, frame_length;
@@ -118,6 +163,16 @@ char *generateResponseLoginFrame(char *frame, char type, int id) {
   return frame;
 }
 
+/*
+ * Function that generates the request frame to search users by zip code.
+ *
+ * @param frame Frame to fill.
+ * @param type Type of search frame.
+ * @param name Name of the user who executes the search command from Fremen.
+ * @param user_id ID of the user who executes the search command from Fremen.
+ * @param zip_code Zip code to search.
+ * @return Search request frame filled.
+*/
 char *generateRequestSearchFrame(char *frame, char type, char *username, int user_id, char *zip_code) {
   char *buffer = NULL;
   int i, frame_length;
@@ -145,6 +200,14 @@ char *generateRequestSearchFrame(char *frame, char type, char *username, int use
   return frame;
 }
 
+/*
+ * Function that generates the search response frame.
+ *
+ * @param frame Frame to fill.
+ * @param type Type of search frame.
+ * @param name Data sent as response from Atreides to a search command.
+ * @return Search frame filled.
+*/
 char *generateResponseSearchFrame(char *frame, char type, char *data) {
   char *buffer = NULL;
   int i, frame_length;
@@ -172,6 +235,13 @@ char *generateResponseSearchFrame(char *frame, char type, char *data) {
   return frame;
 }
 
+/*
+ * Function that retrieves the photo file descriptor on Atreides.
+ *
+ * @param directory Directory from the Atreides configuration file.
+ * @param photo_name ID of the user owner of the photo.
+ * @return Photo file descriptor.
+*/
 int getAtreidesPhotoFD(char *directory, char *photo_name) {
   char *destination_path;
   int destination_fd;
@@ -186,6 +256,12 @@ int getAtreidesPhotoFD(char *directory, char *photo_name) {
   return destination_fd;
 }
 
+/*
+ * Function that generates the MD5SUM hash of a photo.
+ *
+ * @param photo_path Path where is located the photo.
+ * @return MD5SUM hash of the specified photo.
+*/
 char *getPhotoMD5Hash(char *photo_path) {
   int pipe_fd[2];
   pid_t pid;
@@ -232,6 +308,13 @@ char *getPhotoMD5Hash(char *photo_path) {
   return NULL;
 }
 
+/*
+ * Function that generates the photo request frame.
+ *
+ * @param frame Frame to fill.
+ * @param photo_name Name of the requested photo.
+ * @return Photo frame filled.
+*/
 char *generateRequestPhotoFrame(char *frame, char *photo_name) {
   char *buffer = NULL;
   int i, frame_length;
@@ -259,6 +342,13 @@ char *generateRequestPhotoFrame(char *frame, char *photo_name) {
   return frame;  
 }
 
+/*
+ * Function that generates the photo information frame.
+ *
+ * @param frame Frame to fill.
+ * @param photo All photo information.
+ * @return Information photo frame filled.
+*/
 char *generatePhotoInformationFrame(char *frame, Photo photo) {
   char *buffer = NULL;
   int i, frame_length;
@@ -286,6 +376,13 @@ char *generatePhotoInformationFrame(char *frame, Photo photo) {
   return frame;
 }
 
+/*
+ * Function that generates an inexistent photo frame.
+ *
+ * @param frame Frame to fill.
+ * @param data Data to be sent.
+ * @return Inexistent photo frame filled.
+*/
 char *generateInexistentPhotoFrame(char *frame, char *data) {
   char *buffer = NULL;
   int i, frame_length;
@@ -313,6 +410,13 @@ char *generateInexistentPhotoFrame(char *frame, char *data) {
   return frame;
 }
 
+/*
+ * Function that generates a photo frame.
+ *
+ * @param frame Frame to fill.
+ * @param photo_data Data of the photo to be transferred.
+ * @return Photo frame filled.
+*/
 char *generatePhotoFrame(char *frame, char photo_data[FRAME_DATA_LENGTH]) {
   int i, frame_length;
 
@@ -330,6 +434,12 @@ char *generatePhotoFrame(char *frame, char photo_data[FRAME_DATA_LENGTH]) {
   return frame;
 }
 
+/*
+ * Function that receives a photo information frame.
+ *
+ * @param data Data from a photo information frame.
+ * @return All the information received from a photo.
+*/
 Photo receivePhotoInformationFrame(char *data) {
   Photo photo;
   char *buffer = NULL;
@@ -359,6 +469,12 @@ Photo receivePhotoInformationFrame(char *data) {
   return photo;
 }
 
+/*
+ * Function that generates a success photo transfer frame.
+ *
+ * @param frame Frame to fill.
+ * @return Success photo transfer frame filled.
+*/
 char *generatePhotoSuccessTransferFrame(char *frame) {
   char *buffer = NULL;
   int i, frame_length;
@@ -386,6 +502,12 @@ char *generatePhotoSuccessTransferFrame(char *frame) {
   return frame;
 }
 
+/*
+ * Function that generates an error photo transfer frame.
+ *
+ * @param frame Frame to fill.
+ * @return Error photo transfer frame filled.
+*/
 char *generatePhotoErrorTransferFrame(char *frame) {
   char *buffer = NULL;
   int i, frame_length;
@@ -413,6 +535,15 @@ char *generatePhotoErrorTransferFrame(char *frame) {
   return frame;
 }
 
+/*
+ * Function that receives a photo frame by frame and processes it properly
+ * depending on the sender.
+ *
+ * @param user_id ID of the user that sent/requested a photo.
+ * @param socket_fd Socket to receive from the photo frame by frame.
+ * @param directory Directory to store the photo.
+ * @param photo Information of the photo to be received and processed.
+*/
 void processPhotoFrame(int user_id, int socket_fd, char *directory, Photo photo) {
   Frame received_frame;
   char *file_name = NULL, *destination_path = NULL, text[MAX_LENGTH], transferred_photo_hash[PHOTO_HASH_LENGTH],
@@ -501,6 +632,13 @@ void processPhotoFrame(int user_id, int socket_fd, char *directory, Photo photo)
   free(response_frame);
 }
 
+/*
+ * Function that sends a photo frame by frame.
+ *
+ * @param origin Sender of the photo.
+ * @param socket_fd Socket to send the photo frame by frame.
+ * @param photo Information of the photo to be sent.
+*/
 void transferPhoto(int origin, int socket_fd, Photo photo) {
   int number_frames = 0, remainder_data = 0, processed_frames = 0;
   char photo_data[FRAME_DATA_LENGTH], *send_frame = NULL;
@@ -540,6 +678,15 @@ void transferPhoto(int origin, int socket_fd, Photo photo) {
   close(photo.photo_fd);  
 }
 
+/*
+ * Function that generates a request logout frame.
+ *
+ * @param frame Frame to fill.
+ * @param type Type of logout frame.
+ * @param username Name of the user who requested to logout.
+ * @param user_id ID of the user who requested to logout.
+ * @return Logout frame filled.
+*/
 char *generateRequestLogoutFrame(char *frame, char type, char *username, int user_id) {
   char *buffer = NULL;
   int i, frame_length;
@@ -567,6 +714,12 @@ char *generateRequestLogoutFrame(char *frame, char type, char *username, int use
   return frame;
 }
 
+/*
+ * Function that generates an unknown type frame.
+ *
+ * @param frame Frame to fill.
+ * @return Unknown type frame filled.
+*/
 char *generateUnknownTypeFrame(char *frame) {
   char *buffer = NULL;
   int i, frame_length;
@@ -594,10 +747,22 @@ char *generateUnknownTypeFrame(char *frame) {
   return frame;
 }
 
+/*
+ * Function that sends a frame.
+ *
+ * @param fd Socket to send a frame to.
+ * @param frame Frame to send.
+*/
 void sendFrame(int fd, char *frame) {
   write(fd, frame, FRAME_LENGTH);
 }
 
+/*
+ * Function that receives a frame.
+ *
+ * @param fd Socket to receive a frame from.
+ * @return Frame received.
+*/
 Frame receiveFrame(int fd) {
   unsigned char received_frame[FRAME_LENGTH];
   Frame frame;

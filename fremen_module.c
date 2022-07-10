@@ -9,6 +9,12 @@ char *username = NULL;
 int user_id, socket_fd = 0;
 DownloadedPhotosList downloaded_photos_list;
 
+/*
+ * Function that retrieves the Fremen configuration from the configuration file specified.
+ *
+ * @param config_file_fd File descriptor of the configuration file.
+ * @return Configuration of Fremen.
+*/
 FremenConfiguration getFremenConfiguration(int config_file_fd) {
   FremenConfiguration fremen_configuration;
   char *buffer = NULL;
@@ -54,6 +60,12 @@ FremenConfiguration getFremenConfiguration(int config_file_fd) {
   return fremen_configuration;
 }
 
+/*
+ * Function that checks if a photo was already downloaded by a Fremen client from Atreides.
+ *
+ * @param photo_name Name of the photo.
+ * @return Result of the operation.
+*/
 int existsDownloadedPhoto(char *photo_name) {
   // Iterate through the list of downloaded photos
   for (int i = 0; i < downloaded_photos_list.photos_quantity; i++) {
@@ -66,6 +78,11 @@ int existsDownloadedPhoto(char *photo_name) {
   return FALSE;
 }
 
+/*
+ * Function that adds a photo to the list of downloaded photos.
+ *
+ * @param photo_name Name of the photo.
+*/
 void addDownloadedPhotoToList(char *photo_name) {
   // Increase counter of downloaded photos
   downloaded_photos_list.photos_quantity++;
@@ -87,6 +104,9 @@ void addDownloadedPhotoToList(char *photo_name) {
   strcpy(downloaded_photos_list.photo_names[downloaded_photos_list.photos_quantity - 1], photo_name);
 }
 
+/*
+ * Function that deletes all the list of downloaded photos from the Fremen directory.
+*/
 void deleteDownloadedPhotos() {
   char *downloaded_photo_path = NULL, *buffer = NULL, **command = NULL;
 
@@ -116,6 +136,13 @@ void deleteDownloadedPhotos() {
   free(downloaded_photos_list.photo_names);
 }
 
+/*
+ * Function that converts the command introduced by a user to lower case. Only converts
+ * the first word.
+ *
+ * @param command Command introduced by the user.
+ * @return Converted command.
+*/
 char **convertCommandToLowerCase(char **command) {
   char *buffer = NULL;
 
@@ -128,6 +155,11 @@ char **convertCommandToLowerCase(char **command) {
   return command;
 }
 
+/*
+ * Function that executes Linux commands.
+ *
+ * @param command Command to be executed.
+*/
 void runLinuxCommand(char **command) {
   pid_t pid;
 
@@ -151,6 +183,12 @@ void runLinuxCommand(char **command) {
   }
 }
 
+/*
+ * Function that configures the socket connection to Atreides server.
+ *
+ * @param fremen_configuration Fremen configuration.
+ * @return Socket file descriptor.
+*/
 int configureSocket(FremenConfiguration fremen_configuration) {
   struct sockaddr_in server;
   int socket_fd;  
@@ -187,6 +225,13 @@ int configureSocket(FremenConfiguration fremen_configuration) {
   return socket_fd;
 }
 
+/*
+ * Function that receives the results of a search command from Atreides and displays
+ * the results.
+ *
+ * @param socket_fd Socket to read the Atreides search response frame from.
+ * @param zip_code Requested zip code.
+*/
 void showSearchResults(int socket_fd, char *zip_code) {
   Frame frame;
   char *buffer = NULL, text[MAX_LENGTH];
@@ -297,6 +342,12 @@ void showSearchResults(int socket_fd, char *zip_code) {
   }
 }
 
+/*
+ * Function that retrieves the information of a photo.
+ *
+ * @param photo_name Name of the photo.
+ * @return Information of the photo.
+*/
 Photo getPhotoInformation(char *photo_name) {
   char *buffer = NULL;
   Photo photo;
@@ -332,6 +383,11 @@ Photo getPhotoInformation(char *photo_name) {
   return photo;
 }
 
+/*
+ * Function that simulates the bash shell.
+ *
+ * @param fremen_configuration Fremen configuration.
+*/
 void simulateBashShell(FremenConfiguration fremen_configuration) {
   char *buffer = NULL, **command = NULL, *frame = NULL, text[MAX_LENGTH];
   int args_counter = 0, received_photo_id;

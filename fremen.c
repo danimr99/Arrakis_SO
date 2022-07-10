@@ -6,7 +6,9 @@ extern char *username;
 extern int user_id, socket_fd;
 extern DownloadedPhotosList downloaded_photos_list;
 
-// Function to handle signals
+/*
+ * Function that handles any signal that receives Fremen.
+*/
 void RsiHandler(int signal_number) {
   char *frame = NULL;
 

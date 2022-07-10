@@ -4,6 +4,12 @@
 extern UsersList user_list;
 extern AtreidesConfiguration atreides_configuration;
 
+/*
+ * Function that retrieves the Atreides configuration from the configuration file specified.
+ *
+ * @param config_file_fd File descriptor of the configuration file.
+ * @return Configuration of Atreides.
+*/
 AtreidesConfiguration getAtreidesConfiguration(int config_file_fd) {
   AtreidesConfiguration atreides_configuration;
   char *buffer = NULL;
@@ -46,6 +52,11 @@ AtreidesConfiguration getAtreidesConfiguration(int config_file_fd) {
   return atreides_configuration;
 }
 
+/*
+ * Function that retrieves all the users registered from the file USERS_REGISTER_PATH.
+ *
+ * @return List of registered users.
+*/
 UsersList getUsers() {
   char *buffer = NULL;
   UsersList list;
@@ -100,6 +111,11 @@ UsersList getUsers() {
   return list;
 }
 
+/*
+ * Function that adds a user to the list of registered users.
+ *
+ * @param user User to be added.
+*/
 void addUser(User user) {
   // Reserve memory dynamically for the list of users plus the one to be added
   user_list.users = (User *)realloc(user_list.users, sizeof(User) * user_list.users_quantity);
@@ -116,6 +132,9 @@ void addUser(User user) {
   user_list.users[user.id - 1].process = user.process;
 } 
 
+/*
+ * Function that updates the list of registered users to the file USERS_REGISTER_PATH.
+ */
 void updateUsers() {
   char buffer[MAX_LENGTH];
   int users_list_fd;
@@ -144,12 +163,23 @@ void updateUsers() {
   }
 }
 
+/*
+ * Function that generates a user ID.
+ *
+ * @return Generated user ID.
+*/
 int generateUserID() {
   user_list.users_quantity += 1;
 
   return user_list.users_quantity;
 }
 
+/*
+ * Function that checks if exists a user on the registered users list.
+ *
+ * @param user User to be checked.
+ * @return Result of the operation.
+*/
 int existsUser(User user) {
   // Iterate through each user on the list
   for (int i = 0; i < user_list.users_quantity; i++) {
@@ -162,6 +192,13 @@ int existsUser(User user) {
   return FALSE;
 }
 
+/*
+ * Function that retrieves a user ID given a username and a zip code.
+ *
+ * @param username Name of the user.
+ * @param zip_code Zip code of the user.
+ * @return User ID of the specified user.
+*/
 int getUserID(char *username, char *zip_code) {
   int id;
 
@@ -177,6 +214,12 @@ int getUserID(char *username, char *zip_code) {
   return id;
 }
 
+/*
+ * Function that retrieves a user given its user ID.
+ *
+ * @param id User ID of the user to be searched.
+ * @return User searched.
+*/
 User getUserByID(int id) {
   User user;
 
@@ -192,6 +235,13 @@ User getUserByID(int id) {
   return user;
 }
 
+/*
+ * Function that initializes the server to start listening to TCP/IP sockets.
+ *
+ * @param ip Server IP.
+ * @param port Server port.
+ * @return Socket of the server listening.
+*/
 int startServer(char *ip, int port) {
   char buffer[MAX_LENGTH];
   int listen_fd;
@@ -230,6 +280,12 @@ int startServer(char *ip, int port) {
   return listen_fd;
 }
 
+/*
+ * Function that retrieves a user from the data of a frame.
+ *
+ * @param frame_data Data from the frame.
+ * @return User received from a frame.
+*/
 User getUserFromFrame(char frame_data[FRAME_DATA_LENGTH]) {
   User user;
 
@@ -245,6 +301,14 @@ User getUserFromFrame(char frame_data[FRAME_DATA_LENGTH]) {
   return user;
 }
 
+/*
+ * Function that retrieves the list of users found from a specified zip code and
+ * sends it to the Fremen client that requested it.
+ *
+ * @param client_fd Socket to send the list of users from the specified zip code to the Fremen who requested it.
+ * @param mutex Mutual exclusion from Atreides main thread.
+ * @param zip_code Zip code to search.
+*/
 void getUsersDataByZipCode(int client_fd, pthread_mutex_t *mutex, char *zip_code) {
   char *data = NULL, text[MAX_LENGTH], *send_frame = NULL;
   int users_counter = 0;
@@ -311,6 +375,14 @@ void getUsersDataByZipCode(int client_fd, pthread_mutex_t *mutex, char *zip_code
   pthread_mutex_unlock(mutex);  
 }
 
+/*
+ * Function that retrieves all the information related with a photo given a file descriptor of a photo and
+ * the name of the photo.
+ *
+ * @param photo_fd File descriptor of the photo.
+ * @param photo_name Name of the photo.
+ * @return Information of the photo.
+*/
 Photo getPhotoInformation(int photo_fd, char *photo_name) {
   char *buffer = NULL, *photo_path;
   Photo photo;
@@ -341,6 +413,11 @@ Photo getPhotoInformation(int photo_fd, char *photo_name) {
   return photo;
 }
 
+/*
+ * Process executed by each Fremen client that connects to Atreides.
+ * 
+ * @param args The client socket and a mutex.
+*/
 void *runClientThread(void *args) {
   char text[MAX_LENGTH], *send_frame, *zip_code, *transferable_photo_name;
   Frame frame;
@@ -518,6 +595,12 @@ void *runClientThread(void *args) {
   return NULL;
 }
 
+/*
+ * Function that handles each Fremen connection to Atreides.
+ *
+ * @param socket_fd Socket of the server listening.
+ * @param mutex Mutual exclusion from Atreides main thread.
+*/
 void handleConnections(int socket_fd, pthread_mutex_t mutex) {
   int client_fd;
   pthread_t thread;
