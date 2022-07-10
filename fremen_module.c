@@ -191,7 +191,7 @@ void showSearchResults(int socket_fd, char *zip_code) {
   Frame frame;
   char *buffer = NULL, text[MAX_LENGTH];
   UsersList list;
-  int index = 0, users_processed_counter = 0, rounds = 0;
+  int index = 0, users_processed_counter = 0;
 
   // Receive response
   frame = receiveFrame(socket_fd);
