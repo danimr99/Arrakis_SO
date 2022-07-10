@@ -482,7 +482,7 @@ void processPhotoFrame(int user_id, int socket_fd, char *directory, Photo photo)
     } else if(frame_destination == ORIGIN_FREMEN) {
       // Print message informing that the photo was downloaded
       printMessage("Foto descarregada\n");
-    }    
+    }
   } else {
     // Generate photo error frame
     response_frame = generatePhotoErrorTransferFrame(response_frame);

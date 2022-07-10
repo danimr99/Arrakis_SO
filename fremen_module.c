@@ -29,6 +29,7 @@ FremenConfiguration getFremenConfiguration(int config_file_fd) {
   // Get directory from Fremen configuration file
   buffer = readLineUntilDelimiter(config_file_fd, '\n');
   fremen_configuration.directory = (char *)malloc(sizeof(char) * strlen(buffer));
+  memset(fremen_configuration.directory, 0, strlen(buffer) * sizeof(char));
 
   // Iterate through the string skipping the first character ('/')
   for (int i = 1; buffer[i] != '\0'; i++) {
@@ -37,13 +38,16 @@ FremenConfiguration getFremenConfiguration(int config_file_fd) {
   
   free(buffer);
 
-  // Create configuration directory if it does not exist
-  struct stat stats = {0};
+  // Check that exists a directory name on the Fremen configuration
+  if (!isEmpty(fremen_configuration.directory)) {
+    // Create configuration directory if it does not exist
+    struct stat stats = {0};
 
-  if (stat(fremen_configuration.directory, &stats) == -1) {
-    mkdir(fremen_configuration.directory, 0700);
+    if (stat(fremen_configuration.directory, &stats) == -1) {
+      mkdir(fremen_configuration.directory, 0700);
+    }
   }
-
+  
   // Close configuration file descriptor
   close(config_file_fd);
 
@@ -113,8 +117,12 @@ void deleteDownloadedPhotos() {
 }
 
 char **convertCommandToLowerCase(char **command) {
+  char *buffer = NULL;
+
   for(int i = 0; i < 1; i++) {
-    command[i] = toLowerCase(command[i]);
+    buffer = toLowerCase(command[i]);
+    strcpy(command[i], buffer);
+    free(buffer);
   }
 
   return command;
@@ -183,9 +191,9 @@ void showSearchResults(int socket_fd, char *zip_code) {
   Frame frame;
   char *buffer = NULL, text[MAX_LENGTH];
   UsersList list;
-  int index, users_processed_counter = 0;
+  int index = 0, users_processed_counter = 0, rounds = 0;
 
-  // Receive response 
+  // Receive response
   frame = receiveFrame(socket_fd);
 
   // Get the number of users found matching the zip code
@@ -200,7 +208,7 @@ void showSearchResults(int socket_fd, char *zip_code) {
 
     // Set the start index for getting the information from the frame
     index = countDigits(list.users_quantity) + 1;
-
+    
     // Process all the data from the received frame
     do {
       // Get username
@@ -210,10 +218,15 @@ void showSearchResults(int socket_fd, char *zip_code) {
       index += strlen(list.users[users_processed_counter].username) + 1;
 
       // Get user ID
-      buffer = readFromFrameUntilDelimiter(frame.data, index, '*');
+      if (users_processed_counter == (list.users_quantity - 1)) {
+        buffer = readFromFrameUntilDelimiter(frame.data, index, '\0');
+      } else {
+        buffer = readFromFrameUntilDelimiter(frame.data, index, '*');
+      }
+      
       list.users[users_processed_counter].id = atoi(buffer);
       free(buffer);
-      
+
       // Move the index
       index += countDigits(list.users[users_processed_counter].id) + 1;
 
@@ -225,7 +238,7 @@ void showSearchResults(int socket_fd, char *zip_code) {
     if (users_processed_counter < list.users_quantity) {
       // Keep receiving frames with the data remaining
       do {
-        // Receive another response 
+        // Receive another response
         frame = receiveFrame(socket_fd);
 
         // Reset index on read another frame
@@ -238,12 +251,17 @@ void showSearchResults(int socket_fd, char *zip_code) {
 
           // Move the index
           index += strlen(list.users[users_processed_counter].username) + 1;
-
+          
           // Get user ID
-          buffer = readFromFrameUntilDelimiter(frame.data, index, '*');
+          if (users_processed_counter == (list.users_quantity - 1)) {
+            buffer = readFromFrameUntilDelimiter(frame.data, index, '\0');
+          } else {
+            buffer = readFromFrameUntilDelimiter(frame.data, index, '*');
+          }
+          
           list.users[users_processed_counter].id = atoi(buffer);
           free(buffer);
-          
+
           // Move the index
           index += countDigits(list.users[users_processed_counter].id) + 1;
 
@@ -261,6 +279,7 @@ void showSearchResults(int socket_fd, char *zip_code) {
     }
     printMessage(text);
 
+    // Print each result
     for (int i = 0; i < list.users_quantity; i++) {
       sprintf(text, "%d %s\n", list.users[i].id, list.users[i].username);
       printMessage(text);
