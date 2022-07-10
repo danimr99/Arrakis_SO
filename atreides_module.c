@@ -19,6 +19,7 @@ AtreidesConfiguration getAtreidesConfiguration(int config_file_fd) {
   // Get directory from Atreides configuration file
   buffer = readLineUntilDelimiter(config_file_fd, '\n');
   atreides_configuration.directory = (char *)malloc(sizeof(char) * strlen(buffer));
+  memset(atreides_configuration.directory, 0, strlen(buffer) * sizeof(char));
 
   // Iterate through the string skipping the first character ('/')
   for (int i = 1; buffer[i] != '\0'; i++) {
@@ -27,11 +28,14 @@ AtreidesConfiguration getAtreidesConfiguration(int config_file_fd) {
 
   free(buffer);
 
-  // Create configuration directory if it does not exist
-  struct stat stats = {0};
+  // Check that exists a directory name on the Atreides configuration
+  if (!isEmpty(atreides_configuration.directory)) {
+    // Create configuration directory if it does not exist
+    struct stat stats = {0};
 
-  if (stat(atreides_configuration.directory, &stats) == -1) {
-    mkdir(atreides_configuration.directory, 0700);
+    if (stat(atreides_configuration.directory, &stats) == -1) {
+      mkdir(atreides_configuration.directory, 0700);
+    }
   }
 
   printMessage("Llegit el fitxer de configuració\n");
