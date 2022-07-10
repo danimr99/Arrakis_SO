@@ -49,7 +49,7 @@ AtreidesConfiguration getAtreidesConfiguration(int config_file_fd) {
 UsersList getUsers() {
   char *buffer = NULL;
   UsersList list;
-  int users_list_fd, i = 0;
+  int users_list_fd = 0, i = 0;
 
   // Open file containing all the registered users
   users_list_fd = open(USERS_REGISTER_PATH, O_RDONLY);

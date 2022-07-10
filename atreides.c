@@ -2,7 +2,7 @@
 
 // Global variables
 AtreidesConfiguration atreides_configuration;
-int socket_fd;
+int socket_fd = 0;
 pthread_mutex_t mutex;
 UsersList user_list;
 
