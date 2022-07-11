@@ -25,14 +25,14 @@ char *fill(char * array, int index, int size) {
  * @return Array from frame until delimiter.
 */
 char *readFromFrameUntilDelimiter(char *array, int index, char delimiter) {
-  char *text = NULL;
+  char *text;
   int i = 0;
 
   // Reserve memory dynamically for the first character
   text = (char *)malloc(sizeof(char));
 
   // Get all the text until the specified delimiter
-  while(array[index] != delimiter) {    
+  while(array[index] != delimiter && index < FRAME_DATA_LENGTH) {    
     text[i] = array[index];
     text = (char *)realloc(text, i + 2);
     index++;
@@ -102,13 +102,13 @@ int getFrameSender(char frame_origin[FRAME_ORIGIN_LENGTH]) {
  * @return Login request frame filled.
 */
 char *generateRequestLoginFrame(char *frame, char type, char *name, char *zip_code) {
-  char *buffer = NULL;
+  char *buffer;
   int i, frame_length;
 
   // Add frame type
   frame[FRAME_ORIGIN_LENGTH] = type;
 
-  // Concatenate data (name and zip code)
+  // Concatenate data
   asprintf(&buffer, "%s*%s", name, zip_code);
 
   // Get the length of the frame
@@ -137,13 +137,13 @@ char *generateRequestLoginFrame(char *frame, char type, char *name, char *zip_co
  * @return Login response frame filled.
 */
 char *generateResponseLoginFrame(char *frame, char type, int id) {
-  char *buffer = NULL;
+  char *buffer;
   int i, frame_length;
 
   // Add frame type
   frame[FRAME_ORIGIN_LENGTH] = type;
 
-  // Concatenate data (user id)
+  // Concatenate data
   asprintf(&buffer, "%d", id);
 
   // Get the length of the frame
@@ -174,13 +174,13 @@ char *generateResponseLoginFrame(char *frame, char type, int id) {
  * @return Search request frame filled.
 */
 char *generateRequestSearchFrame(char *frame, char type, char *username, int user_id, char *zip_code) {
-  char *buffer = NULL;
+  char *buffer;
   int i, frame_length;
 
   // Add frame type
   frame[FRAME_ORIGIN_LENGTH] = type;
 
-  // Concatenate data (user id)
+  // Concatenate data
   asprintf(&buffer, "%s*%d*%s", username, user_id, zip_code);
 
   // Get the length of the frame
@@ -209,7 +209,7 @@ char *generateRequestSearchFrame(char *frame, char type, char *username, int use
  * @return Search frame filled.
 */
 char *generateResponseSearchFrame(char *frame, char type, char *data) {
-  char *buffer = NULL;
+  char *buffer;
   int i, frame_length;
 
   // Add frame type
@@ -265,7 +265,7 @@ int getAtreidesPhotoFD(char *directory, char *photo_name) {
 char *getPhotoMD5Hash(char *photo_path) {
   int pipe_fd[2];
   pid_t pid;
-  char *hash = NULL;
+  char *hash;
 
   // Create a pipe and check result
   if (pipe(pipe_fd) == -1) {
@@ -316,13 +316,13 @@ char *getPhotoMD5Hash(char *photo_path) {
  * @return Photo frame filled.
 */
 char *generateRequestPhotoFrame(char *frame, char *photo_name) {
-  char *buffer = NULL;
+  char *buffer;
   int i, frame_length;
 
   // Add frame type
   frame[FRAME_ORIGIN_LENGTH] = PHOTO_REQUEST_TYPE;
 
-  // Concatenate data (user id)
+  // Concatenate data 
   asprintf(&buffer, "%s", photo_name);
 
   // Get the length of the frame
@@ -350,14 +350,20 @@ char *generateRequestPhotoFrame(char *frame, char *photo_name) {
  * @return Information photo frame filled.
 */
 char *generatePhotoInformationFrame(char *frame, Photo photo) {
-  char *buffer = NULL;
+  char *buffer;
   int i, frame_length;
 
   // Add frame type
   frame[FRAME_ORIGIN_LENGTH] = PHOTO_INFO_TYPE;
 
-  // Concatenate data (user id)
-  asprintf(&buffer, "%s*%d*%s", photo.name, photo.size, photo.hash);
+  if (photo.photo_fd > 0) {
+    // Concatenate data
+    asprintf(&buffer, "%s*%d*%s", photo.name, photo.size, photo.hash);
+  } else {
+    // Set buffer to empty
+    buffer = (char *)malloc(sizeof(char));
+    buffer[0] = '\0';
+  }
 
   // Get the length of the frame
   frame_length = FRAME_ORIGIN_LENGTH + FRAME_TYPE_LENGTH;
@@ -384,13 +390,13 @@ char *generatePhotoInformationFrame(char *frame, Photo photo) {
  * @return Inexistent photo frame filled.
 */
 char *generateInexistentPhotoFrame(char *frame, char *data) {
-  char *buffer = NULL;
+  char *buffer;
   int i, frame_length;
 
   // Add frame type
   frame[FRAME_ORIGIN_LENGTH] = PHOTO_INFO_TYPE;
 
-  // Concatenate data (user id)
+  // Concatenate data 
   asprintf(&buffer, "%s", data);
 
   // Get the length of the frame
@@ -442,7 +448,7 @@ char *generatePhotoFrame(char *frame, char photo_data[FRAME_DATA_LENGTH]) {
 */
 Photo receivePhotoInformationFrame(char *data) {
   Photo photo;
-  char *buffer = NULL;
+  char *buffer;
   int index = 0;
   
   // Get name of the photo
@@ -476,7 +482,7 @@ Photo receivePhotoInformationFrame(char *data) {
  * @return Success photo transfer frame filled.
 */
 char *generatePhotoSuccessTransferFrame(char *frame) {
-  char *buffer = NULL;
+  char *buffer;
   int i, frame_length;
 
   // Add frame type
@@ -509,7 +515,7 @@ char *generatePhotoSuccessTransferFrame(char *frame) {
  * @return Error photo transfer frame filled.
 */
 char *generatePhotoErrorTransferFrame(char *frame) {
-  char *buffer = NULL;
+  char *buffer;
   int i, frame_length;
 
   // Add frame type
@@ -546,8 +552,8 @@ char *generatePhotoErrorTransferFrame(char *frame) {
 */
 void processPhotoFrame(int user_id, int socket_fd, char *directory, Photo photo) {
   Frame received_frame;
-  char *file_name = NULL, *destination_path = NULL, text[MAX_LENGTH], transferred_photo_hash[PHOTO_HASH_LENGTH],
-    *response_frame = NULL, *buffer = NULL;
+  char *file_name, *destination_path, text[MAX_LENGTH], transferred_photo_hash[PHOTO_HASH_LENGTH],
+    *response_frame, *buffer;
   int destination_fd, number_frames = 0, remainder_data = 0, processed_frames = 0, frame_origin, frame_destination;
 
   // Concatenate destination directory with the renamed image
@@ -641,7 +647,7 @@ void processPhotoFrame(int user_id, int socket_fd, char *directory, Photo photo)
 */
 void transferPhoto(int origin, int socket_fd, Photo photo) {
   int number_frames = 0, remainder_data = 0, processed_frames = 0;
-  char photo_data[FRAME_DATA_LENGTH], *send_frame = NULL;
+  char photo_data[FRAME_DATA_LENGTH], *send_frame;
 
   // Get the number of frames to receive for completing the photo transfer
   number_frames = photo.size / FRAME_DATA_LENGTH;
@@ -688,13 +694,13 @@ void transferPhoto(int origin, int socket_fd, Photo photo) {
  * @return Logout frame filled.
 */
 char *generateRequestLogoutFrame(char *frame, char type, char *username, int user_id) {
-  char *buffer = NULL;
+  char *buffer;
   int i, frame_length;
 
   // Add frame type
   frame[FRAME_ORIGIN_LENGTH] = type;
 
-  // Concatenate data (username and user ID)
+  // Concatenate data
   asprintf(&buffer, "%s*%d", username, user_id);
 
   // Get the length of the frame
@@ -721,7 +727,7 @@ char *generateRequestLogoutFrame(char *frame, char type, char *username, int use
  * @return Unknown type frame filled.
 */
 char *generateUnknownTypeFrame(char *frame) {
-  char *buffer = NULL;
+  char *buffer;
   int i, frame_length;
 
   // Add frame type

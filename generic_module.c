@@ -69,7 +69,7 @@ int isEmpty(char *text) {
  * @return Text splitted.
 */
 char **split(char *text, char *delimiter) {
-  char **split = NULL;
+  char **split;
   int index = 0, split_counter = 0;
 
   // Reserve memory dynamically

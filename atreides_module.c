@@ -12,7 +12,7 @@ extern AtreidesConfiguration atreides_configuration;
 */
 AtreidesConfiguration getAtreidesConfiguration(int config_file_fd) {
   AtreidesConfiguration atreides_configuration;
-  char *buffer = NULL;
+  char *buffer;
 
   // Get IP from Atreides configuration file
   atreides_configuration.ip = readLineUntilDelimiter(config_file_fd, '\n');
@@ -58,7 +58,7 @@ AtreidesConfiguration getAtreidesConfiguration(int config_file_fd) {
  * @return List of registered users.
 */
 UsersList getUsers() {
-  char *buffer = NULL;
+  char *buffer;
   UsersList list;
   int users_list_fd = 0, i = 0;
 
@@ -310,7 +310,7 @@ User getUserFromFrame(char frame_data[FRAME_DATA_LENGTH]) {
  * @param zip_code Zip code to search.
 */
 void getUsersDataByZipCode(int client_fd, pthread_mutex_t *mutex, char *zip_code) {
-  char *data = NULL, text[MAX_LENGTH], *send_frame = NULL;
+  char *data, text[MAX_LENGTH], *send_frame;
   int users_counter = 0;
 
   // Get number of users from the zip code introduced
@@ -384,7 +384,7 @@ void getUsersDataByZipCode(int client_fd, pthread_mutex_t *mutex, char *zip_code
  * @return Information of the photo.
 */
 Photo getPhotoInformation(int photo_fd, char *photo_name) {
-  char *buffer = NULL, *photo_path;
+  char *buffer, *photo_path;
   Photo photo;
 
   // Get the photo file descriptor

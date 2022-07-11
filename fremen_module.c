@@ -5,7 +5,7 @@ const char *custom_commands[] = {"login", "search", "send", "photo", "logout"};
 
 // Global variables
 extern FremenConfiguration fremen_configuration;
-char *username = NULL;
+char *username;
 int user_id, socket_fd = 0;
 DownloadedPhotosList downloaded_photos_list;
 
@@ -17,7 +17,7 @@ DownloadedPhotosList downloaded_photos_list;
 */
 FremenConfiguration getFremenConfiguration(int config_file_fd) {
   FremenConfiguration fremen_configuration;
-  char *buffer = NULL;
+  char *buffer;
 
   // Get clean time period from Fremen configuration file
   buffer = readLineUntilDelimiter(config_file_fd, '\n');
@@ -108,7 +108,7 @@ void addDownloadedPhotoToList(char *photo_name) {
  * Function that deletes all the list of downloaded photos from the Fremen directory.
 */
 void deleteDownloadedPhotos() {
-  char *downloaded_photo_path = NULL, *buffer = NULL, **command = NULL;
+  char *downloaded_photo_path, *buffer, **command;
 
   // Iterate through the list of downloaded photos
   for (int i = 0; i < downloaded_photos_list.photos_quantity; i++) {
@@ -144,7 +144,7 @@ void deleteDownloadedPhotos() {
  * @return Converted command.
 */
 char **convertCommandToLowerCase(char **command) {
-  char *buffer = NULL;
+  char *buffer;
 
   for(int i = 0; i < 1; i++) {
     buffer = toLowerCase(command[i]);
@@ -234,12 +234,18 @@ int configureSocket(FremenConfiguration fremen_configuration) {
 */
 void showSearchResults(int socket_fd, char *zip_code) {
   Frame frame;
-  char *buffer = NULL, text[MAX_LENGTH];
+  char *buffer, text[MAX_LENGTH];
   UsersList list;
   int index = 0, users_processed_counter = 0;
 
   // Receive response
   frame = receiveFrame(socket_fd);
+
+  // Set default value to the number of results found on the list
+  list.users_quantity = 0;
+
+  // Set default values to text
+  memset(text, 0, sizeof(text));
 
   // Get the number of users found matching the zip code
   buffer = readFromFrameUntilDelimiter(frame.data, 0, '*');
@@ -249,13 +255,14 @@ void showSearchResults(int socket_fd, char *zip_code) {
   // Check if there are results found
   if (list.users_quantity > 0) {
     // Reserve memory dynamically for the amount of results
-    list.users = (User *)malloc(sizeof(User) * list.users_quantity);
+    //list.users = (User *)malloc(sizeof(User) * list.users_quantity);
+    list.users = (User *)calloc(list.users_quantity, sizeof(User));
 
     // Set the start index for getting the information from the frame
     index = countDigits(list.users_quantity) + 1;
     
     // Process all the data from the received frame
-    do {
+    while (frame.data[index] != '\0' && index < FRAME_DATA_LENGTH) {
       // Get username
       list.users[users_processed_counter].username = readFromFrameUntilDelimiter(frame.data, index, '*');
 
@@ -277,12 +284,12 @@ void showSearchResults(int socket_fd, char *zip_code) {
 
       // Increase the number of processed users results
       users_processed_counter++;
-    } while (frame.data[index] != '\0');
+    }
 
     // Check if all results have been received
     if (users_processed_counter < list.users_quantity) {
       // Keep receiving frames with the data remaining
-      do {
+      while (users_processed_counter < list.users_quantity) {
         // Receive another response
         frame = receiveFrame(socket_fd);
 
@@ -290,13 +297,13 @@ void showSearchResults(int socket_fd, char *zip_code) {
         index = 0;
 
         // Process all the data from the received frame
-        do {
+        while (frame.data[index] != '\0' && index < FRAME_DATA_LENGTH) {
           // Get username
           list.users[users_processed_counter].username = readFromFrameUntilDelimiter(frame.data, index, '*');
 
           // Move the index
           index += strlen(list.users[users_processed_counter].username) + 1;
-          
+
           // Get user ID
           if (users_processed_counter == (list.users_quantity - 1)) {
             buffer = readFromFrameUntilDelimiter(frame.data, index, '\0');
@@ -312,8 +319,8 @@ void showSearchResults(int socket_fd, char *zip_code) {
 
           // Increase the number of processed users results
           users_processed_counter++;
-        } while (frame.data[index] != '\0');
-      } while (users_processed_counter < list.users_quantity);
+        }
+      }
     }
 
     // Print users list
@@ -349,9 +356,13 @@ void showSearchResults(int socket_fd, char *zip_code) {
  * @return Information of the photo.
 */
 Photo getPhotoInformation(char *photo_name) {
-  char *buffer = NULL;
+  char *buffer;
   Photo photo;
   char *photo_path;
+
+  // Set default values to photo
+  memset(photo.name, 0, sizeof(photo.name));
+  memset(photo.hash, 0, sizeof(photo.hash));
 
   // Set photo name
   strcpy(photo.name, photo_name);
@@ -389,7 +400,7 @@ Photo getPhotoInformation(char *photo_name) {
  * @param fremen_configuration Fremen configuration.
 */
 void simulateBashShell(FremenConfiguration fremen_configuration) {
-  char *buffer = NULL, **command = NULL, *frame = NULL, text[MAX_LENGTH];
+  char *buffer, **command, *frame, text[MAX_LENGTH];
   int args_counter = 0, received_photo_id;
   Frame received_frame;
   Photo photo;
@@ -581,6 +592,9 @@ void simulateBashShell(FremenConfiguration fremen_configuration) {
             sendFrame(socket_fd, frame);
             free(frame);
 
+            // Free up memory of the username
+            free(username);
+
             // Close socket connection
             close(socket_fd);
             socket_fd = 0;
@@ -595,9 +609,11 @@ void simulateBashShell(FremenConfiguration fremen_configuration) {
         runLinuxCommand(command);
       }
 
-      // Free buffer and command
-      free(buffer);
+      // Free command
       free(command);
     }
+
+    // Free buffer
+    free(buffer);
   }
 }

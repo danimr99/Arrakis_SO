@@ -10,7 +10,7 @@ extern DownloadedPhotosList downloaded_photos_list;
  * Function that handles any signal that receives Fremen.
 */
 void RsiHandler(int signal_number) {
-  char *frame = NULL;
+  char *frame;
 
   // Signal received is a SIGINT (Ctrl + C)
   if (signal_number == SIGINT) {

@@ -8,7 +8,7 @@
 char *getProcessOwner() {
   int pipe_fd[2], index = 0;
   pid_t pid;
-  char *process_owner = NULL, character;
+  char *process_owner, character;
 
   // Create a pipe and check result
   if (pipe(pipe_fd) == -1) {
@@ -74,7 +74,7 @@ char *getProcessOwner() {
 char *getFremenProcessesByOwner(char *process_owner) {
   int pipe_fd[2], index = 0;
   pid_t pid;
-  char *processes = NULL, character;
+  char *processes, character;
 
   // Create a pipe and check result
   if (pipe(pipe_fd) == -1) {
