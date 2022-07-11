@@ -41,8 +41,8 @@ Final project of the subject "Operative Systems" that consists on the developmen
 Clone this repository
 
 ```bash
-  git clone https://github.com/danimr99/Arrakis_SO
-  cd Arrakis_SO
+  git clone https://github.com/danimr99/LaSalle_GTAS2_SO_Arrakis_System.git
+  cd LaSalle_GTAS2_SO_Arrakis_System/
 ```
 
 Compile all using the makefile
