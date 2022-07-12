@@ -255,7 +255,6 @@ void showSearchResults(int socket_fd, char *zip_code) {
   // Check if there are results found
   if (list.users_quantity > 0) {
     // Reserve memory dynamically for the amount of results
-    //list.users = (User *)malloc(sizeof(User) * list.users_quantity);
     list.users = (User *)calloc(list.users_quantity, sizeof(User));
 
     // Set the start index for getting the information from the frame

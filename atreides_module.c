@@ -87,7 +87,7 @@ UsersList getUsers() {
   free(buffer);
 
   // Reserve memory dynamically for the quantity of existing users on the file
-  list.users = (User *)malloc(sizeof(User) * list.users_quantity);
+  list.users = (User *)calloc(list.users_quantity, sizeof(User));
 
   // Get every user from the file
   while(i < list.users_quantity) {
@@ -321,6 +321,12 @@ void getUsersDataByZipCode(int client_fd, pthread_mutex_t *mutex, char *zip_code
     }
   }
 
+  // Set default values to text
+  memset(text, 0, sizeof(text));
+
+  // Set buffer to empty
+  data = (char *)malloc(sizeof(char));
+
   // Add number of users to data
   asprintf(&data, "%d", users_counter);
 
@@ -542,6 +548,8 @@ void *runClientThread(void *args) {
           } else if (frame.type == PHOTO_ERROR_TYPE) {
             printMessage("ERROR: No s'ha pogut enviar correctament la foto a Fremen\n");
           }
+
+          close(photo.photo_fd);
         } else {
           sprintf(text, "ERROR: No s'ha trobat la foto %s.jpg\n", transferable_photo_name);
           printMessage(text);
@@ -555,7 +563,6 @@ void *runClientThread(void *args) {
 
         free(send_frame);
         free(transferable_photo_name);
-        close(photo.photo_fd);
 
         break;
 
